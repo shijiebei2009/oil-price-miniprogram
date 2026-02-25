@@ -19,6 +19,7 @@
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "new": "taro new",
     "preview:weapp": "taro build --type weapp --preview",
+    "upload:weapp": "taro build --type weapp --upload",
     "tsc": "npx tsc --noEmit --skipLibCheck"
   },
   "lint-staged": {

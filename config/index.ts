@@ -44,7 +44,7 @@ export default defineConfig<'vite'>(async (merge, _env) => {
                 desc: pkg.description,
                 weapp: {
                   appid: process.env.TARO_APP_WEAPP_APPID,
-                  privateKeyPath: 'key/private.appid.key',
+                  privateKeyPath: `key/private.${process.env.TARO_APP_WEAPP_APPID}.key`,
                 },
               },
             ],

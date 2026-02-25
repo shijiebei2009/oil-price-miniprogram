@@ -42,6 +42,7 @@
     "@tarojs/runtime": "4.1.9",
     "@tarojs/shared": "4.1.9",
     "@tarojs/taro": "4.1.9",
+    "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.8",
     "lucide-react": "^0.511.0",
     "react": "^18.0.0",

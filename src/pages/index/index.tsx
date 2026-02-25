@@ -25,7 +25,6 @@ interface PriceData {
 const IndexPage = () => {
   const [loading, setLoading] = useState(true)
   const [priceData, setPriceData] = useState<PriceData | null>(null)
-  const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
   // 加载油价数据
   const loadPriceData = async () => {

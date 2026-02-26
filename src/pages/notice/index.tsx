@@ -61,7 +61,7 @@ const NoticePage = () => {
   })
 
   return (
-    <View className="w-full min-h-screen bg-gray-50">
+    <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
         <Text className="block text-lg font-bold text-gray-900">调价提醒</Text>
@@ -142,7 +142,7 @@ const NoticePage = () => {
         </View>
 
         {/* 说明信息 */}
-        <View className="bg-blue-50 rounded-xl p-4">
+        <View className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
           <Text className="block text-sm font-semibold text-blue-600 mb-2">
             使用说明
           </Text>

@@ -67,7 +67,7 @@ const CityPage = () => {
   })
 
   return (
-    <View className="w-full min-h-screen bg-gray-50">
+    <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
         <Text className="block text-lg font-bold text-gray-900">城市对比</Text>
@@ -110,19 +110,19 @@ const CityPage = () => {
                   )}
                 </View>
                 <View className="flex flex-row gap-3">
-                  <View className="flex-1 bg-gray-50 rounded-lg p-3">
+                  <View className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-3">
                     <Text className="block text-xs text-gray-500 mb-1">92号</Text>
                     <Text className="block text-base font-bold text-gray-900">
                       {city.gas92}
                     </Text>
                   </View>
-                  <View className="flex-1 bg-gray-50 rounded-lg p-3">
+                  <View className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-3">
                     <Text className="block text-xs text-gray-500 mb-1">95号</Text>
                     <Text className="block text-base font-bold text-gray-900">
                       {city.gas95}
                     </Text>
                   </View>
-                  <View className="flex-1 bg-gray-50 rounded-lg p-3">
+                  <View className="flex-1 bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-3">
                     <Text className="block text-xs text-gray-500 mb-1">0号柴油</Text>
                     <Text className="block text-base font-bold text-gray-900">
                       {city.diesel0}

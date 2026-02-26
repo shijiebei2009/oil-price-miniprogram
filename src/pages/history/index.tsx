@@ -82,7 +82,7 @@ const HistoryPage = () => {
   })
 
   return (
-    <View className="w-full min-h-screen bg-gray-50">
+    <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
         <Text className="block text-lg font-bold text-gray-900">历史价格</Text>

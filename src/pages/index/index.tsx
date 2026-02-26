@@ -169,7 +169,7 @@ const IndexPage = () => {
   }
 
   return (
-    <View className="w-full min-h-screen bg-gray-50">
+    <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 顶部标题栏 - 渐变背景 */}
       <View className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
         <View className="flex flex-row items-center justify-between">
@@ -215,7 +215,7 @@ const IndexPage = () => {
               {priceData.currentPrices.map((item, index) => (
                 <View
                   key={index}
-                  className="bg-gray-50 rounded-xl p-3 mb-2 flex flex-row items-center justify-between"
+                  className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-3 mb-2 flex flex-row items-center justify-between"
                 >
                   <View className="flex-1">
                     <Text className="block text-sm font-semibold text-gray-900 mb-1">

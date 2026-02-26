@@ -81,7 +81,7 @@ const TipsPage = () => {
   })
 
   return (
-    <View className="w-full min-h-screen bg-gray-50">
+    <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 页面标题 */}
       <View className="bg-gradient-to-br from-blue-600 to-blue-700 px-4 py-6">
         <Text className="block text-2xl font-bold text-white mb-2">加油建议</Text>

@@ -50,7 +50,8 @@
 
 .city-search-box {
   padding: 16px 20px;
-  background-color: #f0f2f5;
+  background-color: #fafbfc;
+  border-bottom: 1px solid #e8e9eb;
 }
 
 .city-search-input {
@@ -89,15 +90,14 @@
 }
 
 .city-group-header {
-  padding: 12px 20px 12px 16px;
-  background-color: #f0f2f5;
-  border-bottom: 1px solid #e5e7eb;
-  border-left: 4px solid #3b82f6;
+  padding: 16px 20px 12px;
+  background-color: #fafbfc;
+  border-bottom: 1px solid #e8e9eb;
 }
 
 .city-group-title {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 600;
   color: #333;
 }
 
@@ -107,16 +107,16 @@
   justify-content: space-between;
   padding: 22px 20px;
   background-color: #ffffff;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.2s;
 }
 
 .city-item:active {
-  background-color: #f5f5f5;
+  background-color: #f9f9f9;
 }
 
 .city-item-active {
-  background-color: #e8f4ff;
+  background-color: #e8f4fe;
 }
 
 .city-item-left {

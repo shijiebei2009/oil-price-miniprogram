@@ -2,6 +2,7 @@ import { View, Text } from '@tarojs/components'
 import { useLoad, useDidShow, navigateTo } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
+import CityPicker from '@/components/CityPicker'
 import './index.css'
 
 // 油价数据类型
@@ -25,10 +26,21 @@ interface PriceData {
   provinceName?: string
 }
 
+interface CityItem {
+  name: string
+  province: string
+  gas92: number
+  gas95: number
+  gas98: number
+  diesel0: number
+}
+
 const IndexPage = () => {
   const [loading, setLoading] = useState(true)
   const [priceData, setPriceData] = useState<PriceData | null>(null)
   const [currentCity, setCurrentCity] = useState('北京')
+  const [showCityPicker, setShowCityPicker] = useState(false)
+  const [cityList, setCityList] = useState<CityItem[]>([])
 
   // 加载油价数据
   const loadPriceData = async (city?: string) => {
@@ -57,19 +69,39 @@ const IndexPage = () => {
     }
   }
 
-  // 切换城市
-  const handleCityChange = () => {
-    const cities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '重庆', '武汉', '西安']
-    const currentIndex = cities.indexOf(currentCity)
-    const nextIndex = (currentIndex + 1) % cities.length
-    const nextCity = cities[nextIndex]
+  // 加载城市列表
+  const loadCityList = async () => {
+    try {
+      const res = await Network.request({
+        url: '/api/oil-price/cities/compare',
+        method: 'GET'
+      })
 
-    setCurrentCity(nextCity)
-    loadPriceData(nextCity)
+      if (res.data?.code === 200 && res.data?.data) {
+        setCityList(res.data.data)
+      }
+    } catch (error) {
+      console.error('获取城市列表失败:', error)
+    }
+  }
+
+  // 打开城市选择器
+  const handleCityPickerOpen = () => {
+    setShowCityPicker(true)
+    if (cityList.length === 0) {
+      loadCityList()
+    }
+  }
+
+  // 选择城市
+  const handleCitySelect = (cityName: string) => {
+    setCurrentCity(cityName)
+    loadPriceData(cityName)
   }
 
   useLoad(() => {
     console.log('页面加载')
+    loadCityList()
   })
 
   useDidShow(() => {
@@ -149,7 +181,7 @@ const IndexPage = () => {
           </View>
           <View
             className="flex items-center bg-white/20 rounded-full px-3 py-1"
-            onClick={handleCityChange}
+            onClick={handleCityPickerOpen}
           >
             <Text className="text-sm text-white">{currentCity}</Text>
             <Text className="text-white ml-1 text-xs">▼</Text>
@@ -305,6 +337,15 @@ const IndexPage = () => {
           </View>
         )}
       </View>
+
+      {/* 城市选择器 */}
+      <CityPicker
+        visible={showCityPicker}
+        currentCity={currentCity}
+        cities={cityList}
+        onSelect={handleCitySelect}
+        onClose={() => setShowCityPicker(false)}
+      />
     </View>
   )
 }

@@ -79,8 +79,8 @@
 }
 
 .city-group-title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #666;
 }
 
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 16px 20px;
   background-color: #ffffff;
   border-bottom: 1px solid #f5f5f5;
   transition: background-color 0.2s;
@@ -107,14 +107,14 @@
 }
 
 .city-name {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   color: #333;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .city-price {
-  font-size: 13px;
+  font-size: 15px;
   color: #666;
 }
 

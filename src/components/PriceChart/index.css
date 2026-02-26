@@ -14,6 +14,41 @@
   margin-bottom: 12px;
 }
 
+/* 导出按钮样式 */
+.export-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.export-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.2);
+}
+
+.export-button-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.export-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.export-text {
+  font-size: 13px;
+  color: #ffffff;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* 旧的导出按钮样式（已弃用） */
 .export-btn {
   padding: 4px 12px;
   font-size: 12px;

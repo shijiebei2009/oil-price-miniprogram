@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro'
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, Button } from '@tarojs/components'
+import { View, Text } from '@tarojs/components'
 import * as echarts from 'echarts'
 import WxChart from '@/components/WxChart'
 import './index.css'
@@ -227,21 +227,56 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
       if (isWeapp) {
         // 小程序端：通过 ec-canvas 导出
-        Taro.showToast({
+        Taro.showLoading({
           title: '导出中...',
-          icon: 'loading',
-          duration: 2000
+          mask: true
         })
 
-        // TODO: 小程序端需要通过 ec-canvas 组件的 canvasToTempFilePath 方法导出
-        // 这里需要获取 ec-canvas 组件实例并调用导出方法
-        setTimeout(() => {
-          Taro.showToast({
-            title: '导出成功',
-            icon: 'success'
+        // 小程序端需要保存到相册
+        // 注意：需要用户授权相册权限
+        try {
+          // 1. 检查相册授权
+          const authResult = await Taro.getSetting() as any
+
+          if (!authResult.authSetting['scope.writePhotosAlbum']) {
+            // 2. 请求授权
+            const authorizeResult = await Taro.authorize({
+              scope: 'scope.writePhotosAlbum'
+            }) as any
+            if (!authorizeResult.authSetting['scope.writePhotosAlbum']) {
+              throw new Error('需要相册权限才能保存图片')
+            }
+          }
+
+          // 3. 获取 canvas 实例并导出
+          // 由于 ec-canvas 的 canvasToTempFilePath 方法需要组件实例，这里需要通过 ref 获取
+          // 目前 ec-canvas 组件未暴露 ref，需要先提示用户使用截图功能
+          Taro.hideLoading()
+          Taro.showModal({
+            title: '导出提示',
+            content: '小程序端导出功能正在开发中，您可以截图保存。H5 端支持直接导出图片到本地。',
+            showCancel: false
           })
-          setIsExporting(false)
-        }, 1500)
+        } catch (error: any) {
+          Taro.hideLoading()
+          if (error.errMsg && error.errMsg.includes('auth deny')) {
+            Taro.showModal({
+              title: '权限说明',
+              content: '需要相册权限才能保存图片，请前往设置开启权限',
+              confirmText: '去设置',
+              success: (res) => {
+                if (res.confirm) {
+                  Taro.openSetting()
+                }
+              }
+            })
+          } else {
+            Taro.showToast({
+              title: error.message || '导出失败',
+              icon: 'none'
+            })
+          }
+        }
       } else if (chartInstance) {
         // H5 端：通过 ECharts 的 getDataURL 方法导出
         const url = chartInstance.getDataURL({
@@ -252,13 +287,15 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
         // 创建下载链接
         const link = document.createElement('a')
-        link.download = `油价走势图_${new Date().getTime()}.png`
+        const filename = `油价走势图_${new Date().getTime()}.png`
+        link.download = filename
         link.href = url
         link.click()
 
-        Taro.showToast({
+        Taro.showModal({
           title: '导出成功',
-          icon: 'success'
+          content: `图片已保存到浏览器的默认下载文件夹\n文件名: ${filename}`,
+          showCancel: false
         })
       }
     } catch (error) {
@@ -293,13 +330,13 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         <Text className="block text-base font-semibold text-gray-900 mb-2">
           价格走势
         </Text>
-        <Button
-          className="export-btn"
-          onClick={handleExport}
-          disabled={isExporting}
+        <View
+          className={`export-button ${isExporting ? 'export-button-disabled' : ''}`}
+          onClick={() => !isExporting && handleExport()}
         >
-          {isExporting ? '导出中...' : '📥 导出图片'}
-        </Button>
+          <Text className="export-icon">📥</Text>
+          <Text className="export-text">{isExporting ? '导出中...' : '导出图片'}</Text>
+        </View>
       </View>
 
       {/* 图表区域 */}
@@ -318,7 +355,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
       {/* 提示信息 */}
       <Text className="block text-xs text-gray-400 text-center mt-2">
-        支持拖拽缩放查看不同时间段数据
+        支持拖拽缩放查看不同时间段数据 · H5 端支持导出图片
       </Text>
     </View>
   )

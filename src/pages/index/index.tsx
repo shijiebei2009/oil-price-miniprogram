@@ -215,7 +215,7 @@ const IndexPage = () => {
               {priceData.currentPrices.map((item, index) => (
                 <View
                   key={index}
-                  className="bg-gray-50 rounded-xl p-4 mb-3 flex flex-row items-center justify-between"
+                  className="bg-gray-50 rounded-xl p-3 mb-2 flex flex-row items-center justify-between"
                 >
                   <View className="flex-1">
                     <Text className="block text-sm font-semibold text-gray-900 mb-1">

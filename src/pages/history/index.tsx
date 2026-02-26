@@ -2,6 +2,7 @@ import { View, Text } from '@tarojs/components'
 import { useLoad } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
+import PriceChart from '@/components/PriceChart'
 import './index.css'
 
 interface HistoryPriceData {
@@ -108,15 +109,18 @@ const HistoryPage = () => {
 
       {/* 走势图区域 */}
       <View className="px-4 py-4">
-        <View className="bg-white rounded-2xl p-4 shadow-sm">
-          <Text className="block text-base font-semibold mb-3">价格走势</Text>
-          <View className="h-48 bg-gray-50 rounded-xl flex items-center justify-center">
-            <Text className="text-sm text-gray-500">走势图区域（待实现）</Text>
-          </View>
-          <Text className="block text-xs text-gray-400 text-center mt-2">
-            92号汽油价格走势（元/升）
-          </Text>
-        </View>
+        {historyData.length > 0 && (
+          <PriceChart
+            data={historyData.map((item) => ({
+              date: item.date,
+              price92: item.gas92,
+              price95: item.gas95,
+              price98: item.gas98,
+              priceDiesel: item.diesel0
+            }))}
+            height={300}
+          />
+        )}
       </View>
 
       {/* 主要内容区域 */}

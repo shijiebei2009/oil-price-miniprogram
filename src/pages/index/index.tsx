@@ -128,6 +128,13 @@ const IndexPage = () => {
     })
   }
 
+  // 导航到加油建议页面
+  const navigateToTips = () => {
+    navigateTo({
+      url: '/pages/tips/index'
+    })
+  }
+
   return (
     <View className="w-full min-h-screen bg-gray-50">
       {/* 顶部标题栏 - 渐变背景 */}
@@ -255,7 +262,10 @@ const IndexPage = () => {
                   <Text className="text-sm font-semibold text-gray-900">多城市对比</Text>
                   <Text className="text-xs text-gray-500 mt-1">查看差异</Text>
                 </View>
-                <View className="bg-orange-50 rounded-xl p-4 flex flex-col items-center">
+                <View
+                  className="bg-orange-50 rounded-xl p-4 flex flex-col items-center"
+                  onClick={navigateToTips}
+                >
                   <Text className="text-2xl mb-2">💡</Text>
                   <Text className="text-sm font-semibold text-gray-900">加油建议</Text>
                   <Text className="text-xs text-gray-500 mt-1">省钱攻略</Text>

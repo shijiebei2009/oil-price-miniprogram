@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { View } from '@tarojs/components'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts-for-weixin'  // 🔴 使用 echarts-for-weixin 而不是 echarts
 import './index.css'
 
 interface WxChartProps {

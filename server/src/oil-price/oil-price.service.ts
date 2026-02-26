@@ -561,7 +561,7 @@ export class OilPriceService {
     try {
       this.logger.log('正在从聚合数据 API 获取全国油价数据...')
 
-      const apiUrl = `http://web.juhe.cn:8080/finance/oil/goldprice?key=${apiKey}`
+      const apiUrl = `http://apis.juhe.cn/gnyj/query?key=${apiKey}`
       const data = await this.httpGet(apiUrl)
       const jsonData = JSON.parse(data)
 
@@ -569,20 +569,24 @@ export class OilPriceService {
         throw new Error(`聚合数据 API 返回错误: ${jsonData.reason}`)
       }
 
+      this.logger.log('聚合数据 API 返回数据:', jsonData)
+
       // 解析聚合数据返回的数据
+      // 格式：{ error_code: 0, reason: "success!", result: [{ city: "北京", "92h": "7.08", "95h": "7.53", "98h": "9.03", "0h": "6.76" }] }
       if (jsonData.result && Array.isArray(jsonData.result)) {
         jsonData.result.forEach((item: any) => {
-          const cityName = item.prov
-          if (cityName && !this.realCityPrices[cityName]) {
+          const cityName = item.city
+          if (cityName && item['92h']) {
             this.realCityPrices[cityName] = {
-              gas92: parseFloat(item.p92) || 7.89,
-              gas95: parseFloat(item.p95) || 8.37,
-              gas98: parseFloat(item.p98) || 9.13,
-              diesel0: parseFloat(item.p0) || 7.56,
+              gas92: parseFloat(item['92h']) || 7.89,
+              gas95: parseFloat(item['95h']) || 8.37,
+              gas98: parseFloat(item['98h']) || 9.13,
+              diesel0: parseFloat(item['0h']) || 7.56,
             }
+            this.logger.log(`成功从聚合数据获取 ${cityName} 的数据`)
           }
         })
-        this.logger.log(`成功从聚合数据获取 ${jsonData.result.length} 个省份的数据`)
+        this.logger.log(`成功从聚合数据获取 ${jsonData.result.length} 个城市的数据`)
       }
 
       // 生成历史价格数据

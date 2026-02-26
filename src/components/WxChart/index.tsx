@@ -68,7 +68,7 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
   }
 
   return (
-    <View style={{ width: '100%', height: `${height}px`, position: 'relative' }}>
+    <View className="wx-chart-container" style={{ '--chart-height': `${height}px` } as React.CSSProperties}>
       {/* @ts-ignore */}
       <ec-canvas
         id={canvasId}

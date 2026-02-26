@@ -22,6 +22,9 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
   const [isExporting, setIsExporting] = useState(false)
   const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
+  // 使用固定的 canvasId，避免每次渲染都重新生成
+  const canvasId = 'price-chart-canvas-main'
+
   useEffect(() => {
     if (!isWeapp && chartRef.current && data.length > 0) {
       // H5 端初始化 ECharts
@@ -353,16 +356,16 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
       {/* 图表区域 */}
       {isWeapp ? (
         // 小程序端使用 WxChart 组件
-        <View style={{ width: '100%', height: `${height}px` }}>
+        <View className="chart-container">
           <WxChart
             option={chartOption}
             height={height}
-            canvasId={`price-chart-canvas-${Date.now()}`}
+            canvasId={canvasId}
           />
         </View>
       ) : (
         // H5 端使用原生 ECharts
-        <View ref={chartRef} style={{ width: '100%', height: `${height}px` }} />
+        <View ref={chartRef} className="chart-container" style={{ height: `${height}px` }} />
       )}
 
       {/* 提示信息 */}

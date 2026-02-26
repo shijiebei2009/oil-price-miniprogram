@@ -45,13 +45,23 @@ Component({
   },
 
   ready: function () {
+    console.log('ec-canvas: ready 生命周期触发')
+    console.log('ec-canvas: canvasId', this.data.canvasId)
+    console.log('ec-canvas: ec 对象', this.data.ec)
+
     if (!this.data.ec) {
       console.warn('组件需绑定 ec 变量，例如：<ec-canvas id="mychart-dom-bar" canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>')
       return
     }
 
     if (!this.data.ec.lazyLoad) {
-      this.init()
+      console.log('ec-canvas: 延迟 200ms 后开始初始化，确保 DOM 已渲染')
+      // 延迟初始化，确保父容器已经渲染完成
+      setTimeout(() => {
+        this.init()
+      }, 200)
+    } else {
+      console.log('ec-canvas: 延迟初始化模式，等待手动调用 init()')
     }
   },
 
@@ -61,6 +71,12 @@ Component({
 
       const canUseNewCanvas = compareVersion(version, '2.9.0') >= 0
       const forceUseOldCanvas = this.data.forceUseOldCanvas
+
+      console.log('ec-canvas: 初始化', {
+        version,
+        canUseNewCanvas,
+        forceUseOldCanvas
+      })
 
       if (forceUseOldCanvas || !canUseNewCanvas) {
         this.setData({ isUseNewCanvas: false })
@@ -72,6 +88,7 @@ Component({
     },
 
     initNewCanvas: function () {
+      console.log('initNewCanvas: 开始查询 canvas 节点，canvasId:', this.data.canvasId)
       const query = wx.createSelectorQuery().in(this)
       query
         .select(`#${this.data.canvasId}`)
@@ -81,16 +98,30 @@ Component({
 
           if (!res || !res[0]) {
             console.error('initNewCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
+            console.error('initNewCanvas: 请检查以下几点：')
+            console.error('  1. canvasId 是否正确')
+            console.error('  2. 父容器是否有明确的宽度和高度')
+            console.error('  3. Canvas 组件是否已正确渲染')
             return
           }
 
           const canvasNode = res[0].node
+          const canvasWidth = res[0].width
+          const canvasHeight = res[0].height
+
           console.log('initNewCanvas: canvas 节点获取成功')
+          console.log('initNewCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
+
+          // 检查尺寸是否为 0
+          if (canvasWidth === 0 || canvasHeight === 0) {
+            console.error('initNewCanvas: Canvas 尺寸为 0！无法初始化图表')
+            console.error('initNewCanvas: 父容器尺寸可能不正确，请检查父容器的 width 和 height')
+            return
+          }
 
           const canvas = this.data.ec.canvas = canvasNode
-          const canvasWidth = this.data.ec.width = res[0].width
-          const canvasHeight = this.data.ec.height = res[0].height
-          console.log('initNewCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
+          this.data.ec.width = canvasWidth
+          this.data.ec.height = canvasHeight
 
           const ctx = canvas.getContext('2d')
 
@@ -100,7 +131,11 @@ Component({
           canvas.width = canvasWidth * dpr
           canvas.height = canvasHeight * dpr
           ctx.scale(dpr, dpr)
-          console.log('initNewCanvas: canvas 尺寸已调整')
+          console.log('initNewCanvas: canvas 尺寸已调整', {
+            width: canvas.width,
+            height: canvas.height,
+            scale: dpr
+          })
 
           if (this.data.ec.onInit) {
             console.log('initNewCanvas: 调用 onInit 回调')
@@ -110,6 +145,7 @@ Component({
     },
 
     initOldCanvas: function () {
+      console.log('initOldCanvas: 开始查询 canvas 节点，canvasId:', this.data.canvasId)
       const query = wx.createSelectorQuery().in(this)
       query
         .select(`#${this.data.canvasId}`)
@@ -119,12 +155,24 @@ Component({
 
           if (!res || !res[0]) {
             console.error('initOldCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
+            console.error('initOldCanvas: 请检查以下几点：')
+            console.error('  1. canvasId 是否正确')
+            console.error('  2. 父容器是否有明确的宽度和高度')
+            console.error('  3. Canvas 组件是否已正确渲染')
             return
           }
 
           const canvasWidth = res[0].width
           const canvasHeight = res[0].height
+
           console.log('initOldCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
+
+          // 检查尺寸是否为 0
+          if (canvasWidth === 0 || canvasHeight === 0) {
+            console.error('initOldCanvas: Canvas 尺寸为 0！无法初始化图表')
+            console.error('initOldCanvas: 父容器尺寸可能不正确，请检查父容器的 width 和 height')
+            return
+          }
 
           // 使用新版 API，即使是在旧版本中尝试
           if (typeof wx.createCanvasContext === 'undefined') {

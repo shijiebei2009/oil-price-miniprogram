@@ -62,6 +62,21 @@
   font-size: 22px;
   color: #333;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  line-height: 60px;
+}
+
+/* 小程序 placeholder 样式 */
+.city-search-placeholder {
+  font-size: 22px;
+  color: #999;
+  line-height: 60px;
+}
+
+/* H5 placeholder 样式 */
+.city-search-input::placeholder {
+  font-size: 22px;
+  color: #999;
+  line-height: 60px;
 }
 
 .city-list {

@@ -83,6 +83,7 @@ const CityPicker: React.FC<CityPickerProps> = ({
           <Input
             className="city-search-input"
             placeholder="搜索城市"
+            placeholderClass="city-search-placeholder"
             value={searchText}
             onInput={(e) => setSearchText(e.detail.value)}
           />

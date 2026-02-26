@@ -34,6 +34,9 @@ Component({
     ec: {
       type: Object
     },
+    echarts: {
+      type: Object
+    },
     forceUseOldCanvas: {
       type: Boolean,
       value: false
@@ -44,26 +47,27 @@ Component({
     isUseNewCanvas: false
   },
 
-  ready: function () {
-    console.log('ec-canvas: ready 生命周期触发')
-    console.log('ec-canvas: canvasId', this.data.canvasId)
-    console.log('ec-canvas: ec 对象', this.data.ec)
+    ready: function () {
+      console.log('ec-canvas: ready 生命周期触发')
+      console.log('ec-canvas: canvasId', this.data.canvasId)
+      console.log('ec-canvas: ec 对象', this.data.ec)
+      console.log('ec-canvas: echarts 对象', this.data.echarts)
 
-    if (!this.data.ec) {
-      console.warn('组件需绑定 ec 变量，例如：<ec-canvas id="mychart-dom-bar" canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>')
-      return
-    }
+      if (!this.data.ec) {
+        console.warn('组件需绑定 ec 变量，例如：<ec-canvas id="mychart-dom-bar" canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>')
+        return
+      }
 
-    if (!this.data.ec.lazyLoad) {
-      console.log('ec-canvas: 延迟 200ms 后开始初始化，确保 DOM 已渲染')
-      // 延迟初始化，确保父容器已经渲染完成
-      setTimeout(() => {
-        this.init()
-      }, 200)
-    } else {
-      console.log('ec-canvas: 延迟初始化模式，等待手动调用 init()')
-    }
-  },
+      if (!this.data.ec.lazyLoad) {
+        console.log('ec-canvas: 延迟 200ms 后开始初始化，确保 DOM 已渲染')
+        // 延迟初始化，确保父容器已经渲染完成
+        setTimeout(() => {
+          this.init()
+        }, 200)
+      } else {
+        console.log('ec-canvas: 延迟初始化模式，等待手动调用 init()')
+      }
+    },
 
   methods: {
     init: function () {
@@ -192,7 +196,8 @@ Component({
 
           if (this.data.ec.onInit) {
             console.log('initOldCanvas: 调用 onInit 回调')
-            this.data.ec.onInit(ctx, canvasWidth, canvasHeight)
+            // 将 echarts 实例作为第四个参数传递
+            this.data.ec.onInit(ctx, canvasWidth, canvasHeight, this.data.echarts)
           }
         })
     },

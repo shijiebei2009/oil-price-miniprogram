@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { View } from '@tarojs/components'
-import * as echarts from 'echarts-for-weixin'  // 🔴 使用 echarts-for-weixin 而不是 echarts
+import * as echarts from 'echarts'  // 使用标准 echarts 包
 import './index.css'
 
 interface WxChartProps {
@@ -31,13 +31,14 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
     }
   }, [option])
 
-  const initChart = (canvas: any, width: number, heightValue: number) => {
+  const initChart = (canvas: any, width: number, heightValue: number, echartsLib: any) => {
     console.log('WxChart: 初始化图表', {
       width,
       height: heightValue,
       canvasId,
       canvasType: typeof canvas,
-      dataLength: optionRef.current?.series?.[0]?.data?.length
+      dataLength: optionRef.current?.series?.[0]?.data?.length,
+      hasEcharts: !!echartsLib
     })
 
     if (!canvas) {
@@ -45,8 +46,13 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
       return null
     }
 
+    if (!echartsLib) {
+      console.error('WxChart: echarts 库未传入，无法初始化图表')
+      return null
+    }
+
     try {
-      const chart = echarts.init(canvas, null, {
+      const chart = echartsLib.init(canvas, null, {
         width: width,
         height: heightValue,
         devicePixelRatio: 1
@@ -77,6 +83,7 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
           onInit: initChart,
           lazyLoad: false
         }}
+        echarts={echarts}
       />
     </View>
   )

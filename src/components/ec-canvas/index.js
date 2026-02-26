@@ -78,13 +78,20 @@ Component({
         forceUseOldCanvas
       })
 
-      if (forceUseOldCanvas || !canUseNewCanvas) {
-        this.setData({ isUseNewCanvas: false })
-        this.initOldCanvas()
-      } else {
-        this.setData({ isUseNewCanvas: true })
-        this.initNewCanvas()
-      }
+      // 🔴 强制使用旧版 Canvas，因为新版 Canvas 不兼容 ECharts
+      // 新版 Canvas 返回的节点对象没有 addEventListener 等 DOM 方法
+      console.log('ec-canvas: 强制使用旧版 Canvas API (兼容 ECharts)')
+      this.setData({ isUseNewCanvas: false })
+      this.initOldCanvas()
+
+      // 原来的逻辑：
+      // if (forceUseOldCanvas || !canUseNewCanvas) {
+      //   this.setData({ isUseNewCanvas: false })
+      //   this.initOldCanvas()
+      // } else {
+      //   this.setData({ isUseNewCanvas: true })
+      //   this.initNewCanvas()
+      // }
     },
 
     initNewCanvas: function () {
@@ -145,20 +152,16 @@ Component({
     },
 
     initOldCanvas: function () {
-      console.log('initOldCanvas: 开始查询 canvas 节点，canvasId:', this.data.canvasId)
+      console.log('initOldCanvas: 开始查询 canvas 尺寸，canvasId:', this.data.canvasId)
       const query = wx.createSelectorQuery().in(this)
       query
         .select(`#${this.data.canvasId}`)
-        .fields({ node: true, size: true })
+        .fields({ size: true })
         .exec((res) => {
           console.log('initOldCanvas: 查询结果', res)
 
           if (!res || !res[0]) {
             console.error('initOldCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
-            console.error('initOldCanvas: 请检查以下几点：')
-            console.error('  1. canvasId 是否正确')
-            console.error('  2. 父容器是否有明确的宽度和高度')
-            console.error('  3. Canvas 组件是否已正确渲染')
             return
           }
 
@@ -174,7 +177,7 @@ Component({
             return
           }
 
-          // 使用新版 API，即使是在旧版本中尝试
+          // 使用旧版 Canvas API
           if (typeof wx.createCanvasContext === 'undefined') {
             console.error('initOldCanvas: wx.createCanvasContext 不存在')
             return

@@ -54,16 +54,25 @@
   border-bottom: 1px solid #e8e9eb;
 }
 
-.city-search-input {
+.city-search-input-wrapper {
   width: 100%;
   height: 60px;
   background-color: #ffffff;
   border-radius: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
   padding: 0 20px;
+}
+
+.city-search-input {
+  width: 100%;
+  height: 100%;
   font-size: 22px;
   color: #333;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  line-height: 60px;
+  background: transparent;
+  border: none;
+  outline: none;
 }
 
 /* 小程序 placeholder 样式 */
@@ -77,7 +86,6 @@
 .city-search-input::placeholder {
   font-size: 22px;
   color: #999;
-  line-height: 60px;
 }
 
 .city-list {

@@ -80,13 +80,15 @@ const CityPicker: React.FC<CityPickerProps> = ({
 
         {/* 搜索框 */}
         <View className="city-search-box">
-          <Input
-            className="city-search-input"
-            placeholder="搜索城市"
-            placeholderClass="city-search-placeholder"
-            value={searchText}
-            onInput={(e) => setSearchText(e.detail.value)}
-          />
+          <View className="city-search-input-wrapper">
+            <Input
+              className="city-search-input"
+              placeholder="搜索城市"
+              placeholderClass="city-search-placeholder"
+              value={searchText}
+              onInput={(e) => setSearchText(e.detail.value)}
+            />
+          </View>
         </View>
 
         {/* 城市列表 */}
@@ -104,8 +106,8 @@ const CityPicker: React.FC<CityPickerProps> = ({
                   onClick={() => handleCitySelect(city.name)}
                 >
                   <View className="city-item-left">
-                    <Text className="city-name">{city.name}</Text>
-                    <Text className="city-price">92#: {city.gas92.toFixed(2)}元</Text>
+                    <Text className="block city-name">{city.name}</Text>
+                    <Text className="block city-price">92#: {city.gas92.toFixed(2)}元</Text>
                   </View>
                   {currentCity === city.name && (
                     <View className="city-item-check">

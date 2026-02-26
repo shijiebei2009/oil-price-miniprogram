@@ -5,6 +5,9 @@ import * as echarts from 'echarts'
 import WxChart from '@/components/WxChart'
 import './index.css'
 
+// 声明微信小程序全局对象
+declare const wx: any
+
 interface PriceChartProps {
   data: Array<{
     date: string
@@ -226,14 +229,12 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
       setIsExporting(true)
 
       if (isWeapp) {
-        // 小程序端：通过 ec-canvas 导出
+        // 小程序端：使用 canvasToTempFilePath 导出
         Taro.showLoading({
           title: '导出中...',
           mask: true
         })
 
-        // 小程序端需要保存到相册
-        // 注意：需要用户授权相册权限
         try {
           // 1. 检查相册授权
           const authResult = await Taro.getSetting() as any
@@ -248,14 +249,38 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
             }
           }
 
-          // 3. 获取 canvas 实例并导出
-          // 由于 ec-canvas 的 canvasToTempFilePath 方法需要组件实例，这里需要通过 ref 获取
-          // 目前 ec-canvas 组件未暴露 ref，需要先提示用户使用截图功能
-          Taro.hideLoading()
-          Taro.showModal({
-            title: '导出提示',
-            content: '小程序端导出功能正在开发中，您可以截图保存。H5 端支持直接导出图片到本地。',
-            showCancel: false
+          // 3. 使用 wx.canvasToTempFilePath 导出
+          await new Promise((resolve, reject) => {
+            wx.canvasToTempFilePath({
+              canvasId: 'mychart-canvas',
+              success: (res: any) => {
+                console.log('图表导出成功', res.tempFilePath)
+
+                // 4. 保存到相册
+                wx.saveImageToPhotosAlbum({
+                  filePath: res.tempFilePath,
+                  success: () => {
+                    Taro.hideLoading()
+                    Taro.showModal({
+                      title: '导出成功',
+                      content: '图片已保存到相册',
+                      showCancel: false
+                    })
+                    resolve(null)
+                  },
+                  fail: (err: any) => {
+                    Taro.hideLoading()
+                    console.error('保存到相册失败', err)
+                    reject(err)
+                  }
+                })
+              },
+              fail: (err: any) => {
+                Taro.hideLoading()
+                console.error('图表导出失败', err)
+                reject(err)
+              }
+            })
           })
         } catch (error: any) {
           Taro.hideLoading()
@@ -346,6 +371,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
           <WxChart
             option={chartOption}
             height={height}
+            canvasId="mychart-canvas"
           />
         </View>
       ) : (
@@ -355,7 +381,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
       {/* 提示信息 */}
       <Text className="block text-xs text-gray-400 text-center mt-2">
-        支持拖拽缩放查看不同时间段数据 · H5 端支持导出图片
+        支持拖拽缩放查看不同时间段数据 · 支持导出图片
       </Text>
     </View>
   )

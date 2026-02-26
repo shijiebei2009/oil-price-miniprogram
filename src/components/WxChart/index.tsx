@@ -7,9 +7,10 @@ interface WxChartProps {
   option: echarts.EChartsOption
   height?: number
   onReady?: () => void
+  canvasId?: string
 }
 
-const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady }) => {
+const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvasId = 'mychart-canvas' }) => {
   const chartRef = useRef<any>(null)
   const optionRef = useRef<echarts.EChartsOption>(option)
 
@@ -30,7 +31,7 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady }) => {
   }, [])
 
   const initChart = (canvas: any, width: number, heightValue: number) => {
-    console.log('WxChart: 初始化图表', { width, height: heightValue })
+    console.log('WxChart: 初始化图表', { width, height: heightValue, canvasId })
 
     try {
       const chart = echarts.init(canvas, null, {
@@ -58,8 +59,8 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady }) => {
     <View style={{ width: '100%', height: `${height}px` }}>
       {/* @ts-ignore */}
       <ec-canvas
-        id={`mychart-dom-${Math.random().toString(36).substr(2, 9)}`}
-        canvas-id={`mychart-canvas-${Math.random().toString(36).substr(2, 9)}`}
+        id={`mychart-dom-${canvasId}`}
+        canvas-id={canvasId}
         ec={{
           onInit: initChart,
           lazyLoad: false

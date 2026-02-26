@@ -2,7 +2,6 @@ import Taro from '@tarojs/taro'
 import { useEffect, useRef, useState } from 'react'
 import { View, Text } from '@tarojs/components'
 import * as echarts from 'echarts'
-import WxChart from '@/components/WxChart'
 import './index.css'
 
 interface PriceChartProps {
@@ -19,15 +18,11 @@ interface PriceChartProps {
 const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
   const chartRef = useRef<HTMLDivElement>(null)
   const [chartInstance, setChartInstance] = useState<echarts.ECharts | null>(null)
-  const [isExporting, setIsExporting] = useState(false)
   const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
-  // 使用固定的 canvasId，避免每次渲染都重新生成
-  const canvasId = 'price-chart-canvas-main'
-
+  // H5 端初始化 ECharts
   useEffect(() => {
     if (!isWeapp && chartRef.current && data.length > 0) {
-      // H5 端初始化 ECharts
       const chart = echarts.init(chartRef.current)
       setChartInstance(chart)
 
@@ -45,7 +40,6 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         chart.dispose()
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isWeapp])
 
   const getChartOption = (chartData: typeof data) => {
@@ -81,21 +75,6 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         top: '10%',
         containLabel: true
       },
-      // 数据缩放组件
-      dataZoom: [
-        {
-          type: 'inside',
-          start: 0,
-          end: 100
-        },
-        {
-          type: 'slider',
-          start: 0,
-          end: 100,
-          height: 20,
-          bottom: 50
-        }
-      ],
       xAxis: {
         type: 'category',
         boundaryGap: false,
@@ -221,122 +200,38 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
     } as echarts.EChartsOption
   }
 
-  // 导出图表为图片
-  const handleExport = async () => {
-    if (isExporting) return
-
-    try {
-      setIsExporting(true)
-
-      if (isWeapp) {
-        // 小程序端：使用 canvasToTempFilePath 导出
-        Taro.showLoading({
-          title: '导出中...',
-          mask: true
-        })
-
-        try {
-          // 1. 检查相册授权
-          const authResult = await Taro.getSetting() as any
-
-          if (!authResult.authSetting['scope.writePhotosAlbum']) {
-            // 2. 请求授权
-            const authorizeResult = await Taro.authorize({
-              scope: 'scope.writePhotosAlbum'
-            }) as any
-            if (!authorizeResult.authSetting['scope.writePhotosAlbum']) {
-              throw new Error('需要相册权限才能保存图片')
-            }
-          }
-
-          // 3. 使用 Taro.canvasToTempFilePath 导出
-          const res = await Taro.canvasToTempFilePath({
-            canvasId: 'mychart-canvas',
-            fileType: 'png',
-            quality: 1
-          })
-
-          console.log('图表导出成功', res.tempFilePath)
-
-          // 4. 保存到相册
-          await Taro.saveImageToPhotosAlbum({
-            filePath: res.tempFilePath
-          })
-
-          Taro.hideLoading()
-          Taro.showModal({
-            title: '导出成功',
-            content: '图片已保存到相册',
-            showCancel: false
-          })
-        } catch (error: any) {
-          Taro.hideLoading()
-          console.error('导出失败:', error)
-
-          if (error.errMsg && error.errMsg.includes('auth deny')) {
-            Taro.showModal({
-              title: '权限说明',
-              content: '需要相册权限才能保存图片，请前往设置开启权限',
-              confirmText: '去设置',
-              success: (res) => {
-                if (res.confirm) {
-                  Taro.openSetting()
-                }
-              }
-            })
-          } else {
-            Taro.showToast({
-              title: error.message || '导出失败',
-              icon: 'none'
-            })
-          }
-        }
-      } else if (chartInstance) {
-        // H5 端：通过 ECharts 的 getDataURL 方法导出
-        const url = chartInstance.getDataURL({
-          type: 'png',
-          pixelRatio: 2,
-          backgroundColor: '#fff'
-        })
-
-        // 创建下载链接
-        const link = document.createElement('a')
-        const filename = `油价走势图_${new Date().getTime()}.png`
-        link.download = filename
-        link.href = url
-        link.click()
-
-        Taro.showModal({
-          title: '导出成功',
-          content: `图片已保存到浏览器的默认下载文件夹\n文件名: ${filename}`,
-          showCancel: false
-        })
-      }
-    } catch (error) {
-      console.error('导出失败:', error)
-      Taro.showToast({
-        title: '导出失败',
-        icon: 'none'
-      })
-    } finally {
-      setIsExporting(false)
-    }
-  }
-
-  if (data.length === 0) {
+  if (isWeapp) {
+    // 微信小程序端：显示提示信息
     return (
       <View className="price-chart">
-        <View className="chart-placeholder">
-          <Text className="block text-gray-500 text-center">
-            暂无数据
+        <View className="chart-toolbar">
+          <Text className="block text-base font-semibold text-gray-900 mb-2">
+            价格走势
           </Text>
         </View>
+
+        {/* 图表区域 */}
+        <View className="chart-container" style={{ height: `${height}px` }}>
+          <View className="flex flex-col items-center justify-center h-full bg-gray-50 rounded-xl">
+            <Text className="block text-6xl mb-4">📊</Text>
+            <Text className="block text-base font-semibold text-gray-700 mb-2">
+              图表功能开发中
+            </Text>
+            <Text className="block text-sm text-gray-500 text-center px-8">
+              微信小程序端图表功能正在开发中，请使用 H5 端体验完整功能
+            </Text>
+          </View>
+        </View>
+
+        {/* 提示信息 */}
+        <Text className="block text-xs text-gray-400 text-center mt-2">
+          数据已更新，可在下方列表查看详细价格
+        </Text>
       </View>
     )
   }
 
-  const chartOption = getChartOption(data)
-
+  // H5 端：显示完整图表
   return (
     <View className="price-chart">
       {/* 工具栏 */}
@@ -344,33 +239,14 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         <Text className="block text-base font-semibold text-gray-900 mb-2">
           价格走势
         </Text>
-        <View
-          className={`export-button ${isExporting ? 'export-button-disabled' : ''}`}
-          onClick={() => !isExporting && handleExport()}
-        >
-          <Text className="export-icon">📥</Text>
-          <Text className="export-text">{isExporting ? '导出中...' : '导出图片'}</Text>
-        </View>
       </View>
 
       {/* 图表区域 */}
-      {isWeapp ? (
-        // 小程序端使用 WxChart 组件
-        <View className="chart-container">
-          <WxChart
-            option={chartOption}
-            height={height}
-            canvasId={canvasId}
-          />
-        </View>
-      ) : (
-        // H5 端使用原生 ECharts
-        <View ref={chartRef} className="chart-container" style={{ height: `${height}px` }} />
-      )}
+      <View ref={chartRef} className="chart-container" style={{ height: `${height}px` }} />
 
       {/* 提示信息 */}
       <Text className="block text-xs text-gray-400 text-center mt-2">
-        支持拖拽缩放查看不同时间段数据 · 支持导出图片
+        支持拖拽缩放查看不同时间段数据
       </Text>
     </View>
   )

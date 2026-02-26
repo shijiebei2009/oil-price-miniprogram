@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad, useDidShow } from '@tarojs/taro'
+import { useLoad, useDidShow, navigateTo } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import './index.css'
@@ -20,26 +20,29 @@ interface PriceData {
     daysRemaining: number
   }
   updateTime: string
+  cityName?: string
+  provinceName?: string
 }
 
 const IndexPage = () => {
   const [loading, setLoading] = useState(true)
   const [priceData, setPriceData] = useState<PriceData | null>(null)
+  const [currentCity, setCurrentCity] = useState('北京')
 
   // 加载油价数据
-  const loadPriceData = async () => {
+  const loadPriceData = async (city?: string) => {
     try {
       setLoading(true)
-      console.log('开始获取油价数据...')
+      console.log('开始获取油价数据，城市:', city)
 
       const res = await Network.request({
         url: '/api/oil-price/current',
-        method: 'GET'
+        method: 'GET',
+        data: city ? { city } : {}
       })
 
       console.log('油价数据响应:', res.data)
 
-      // 解析响应数据
       if (res.data?.code === 200 && res.data?.data) {
         setPriceData(res.data.data)
         console.log('油价数据解析成功:', res.data.data)
@@ -53,13 +56,24 @@ const IndexPage = () => {
     }
   }
 
+  // 切换城市
+  const handleCityChange = () => {
+    const cities = ['北京', '上海', '广州', '深圳', '杭州', '南京', '成都', '重庆', '武汉', '西安']
+    const currentIndex = cities.indexOf(currentCity)
+    const nextIndex = (currentIndex + 1) % cities.length
+    const nextCity = cities[nextIndex]
+
+    setCurrentCity(nextCity)
+    loadPriceData(nextCity)
+  }
+
   useLoad(() => {
     console.log('页面加载')
   })
 
   useDidShow(() => {
     console.log('页面显示')
-    loadPriceData()
+    loadPriceData(currentCity)
   })
 
   // 获取调价方向的显示
@@ -93,18 +107,50 @@ const IndexPage = () => {
     return 'text-gray-500'
   }
 
+  // 导航到历史价格页面
+  const navigateToHistory = () => {
+    navigateTo({
+      url: '/pages/history/index'
+    })
+  }
+
+  // 导航到城市对比页面
+  const navigateToCityCompare = () => {
+    navigateTo({
+      url: '/pages/city/index'
+    })
+  }
+
+  // 导航到通知设置页面
+  const navigateToNotice = () => {
+    navigateTo({
+      url: '/pages/notice/index'
+    })
+  }
+
   return (
     <View className="w-full min-h-screen bg-gray-50">
-      {/* 顶部标题栏 */}
-      <View className="bg-white px-4 py-4 shadow-sm">
-        <Text className="block text-2xl font-bold text-gray-900">油价查询</Text>
-        <Text className="block text-sm text-gray-500 mt-1">
-          {loading ? '加载中...' : `更新时间：${priceData?.updateTime || '暂无数据'}`}
-        </Text>
+      {/* 顶部标题栏 - 渐变背景 */}
+      <View className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+        <View className="flex flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="block text-lg font-bold text-white">油价查询</Text>
+            <Text className="block text-xs text-blue-100 mt-1">
+              {loading ? '加载中...' : `更新：${priceData?.updateTime || '暂无数据'}`}
+            </Text>
+          </View>
+          <View
+            className="flex items-center bg-white/20 rounded-full px-3 py-1"
+            onClick={handleCityChange}
+          >
+            <Text className="text-sm text-white">{currentCity}</Text>
+            <Text className="text-white ml-1 text-xs">▼</Text>
+          </View>
+        </View>
       </View>
 
       {/* 主要内容区域 */}
-      <View className="p-4">
+      <View className="p-3">
         {/* 加载状态 */}
         {loading && (
           <View className="flex items-center justify-center py-12">
@@ -114,24 +160,31 @@ const IndexPage = () => {
 
         {/* 数据展示 */}
         {!loading && priceData && (
-          <View className="flex flex-col gap-4">
+          <View className="flex flex-col gap-3">
             {/* 当前油价卡片 */}
-            <View className="bg-white rounded-xl p-4 shadow-sm">
-              <Text className="block text-lg font-semibold mb-4">当前油价</Text>
+            <View className="bg-white rounded-2xl p-4 shadow-sm">
+              <View className="flex flex-row items-center justify-between mb-4">
+                <Text className="block text-lg font-semibold text-gray-900">当前油价</Text>
+                {priceData.provinceName && priceData.cityName && (
+                  <Text className="block text-xs text-gray-500">
+                    {priceData.provinceName} · {priceData.cityName}
+                  </Text>
+                )}
+              </View>
 
               {priceData.currentPrices.map((item, index) => (
                 <View
                   key={index}
-                  className="bg-gray-50 rounded-lg p-4 mb-3 flex flex-row items-center justify-between"
+                  className="bg-gray-50 rounded-xl p-4 mb-3 flex flex-row items-center justify-between"
                 >
                   <View className="flex-1">
-                    <Text className="block text-base font-semibold text-gray-900 mb-1">
+                    <Text className="block text-sm font-semibold text-gray-900 mb-1">
                       {item.name}
                     </Text>
-                    <Text className="block text-sm text-gray-500">元/升</Text>
+                    <Text className="block text-xs text-gray-500">元/升</Text>
                   </View>
                   <View className="text-right">
-                    <Text className="block text-2xl font-bold text-gray-900">
+                    <Text className="block text-3xl font-bold text-gray-900">
                       {item.price.toFixed(2)}
                     </Text>
                     <Text className={`block text-sm ${getChangeColor(item.change)}`}>
@@ -144,17 +197,27 @@ const IndexPage = () => {
 
             {/* 调价预警卡片 */}
             {priceData.nextAdjustment && (
-              <View className="bg-white rounded-xl p-4 shadow-sm">
-                <Text className="block text-lg font-semibold mb-4">下次调价</Text>
-
+              <View className="bg-white rounded-2xl p-4 shadow-sm">
                 <View className="flex flex-row items-center justify-between mb-4">
+                  <Text className="block text-lg font-semibold text-gray-900">下次调价</Text>
+                  <View className="flex items-center gap-2">
+                    <View className="w-2 h-2 rounded-full bg-red-500"></View>
+                    <Text className="text-xs text-gray-500">
+                      距离调价还有 {priceData.nextAdjustment.daysRemaining} 天
+                    </Text>
+                  </View>
+                </View>
+
+                <View className="flex flex-row items-center justify-between bg-gray-50 rounded-xl p-4">
                   <View>
-                    <Text className="block text-sm text-gray-500 mb-1">预计日期</Text>
+                    <Text className="block text-xs text-gray-500 mb-1">预计日期</Text>
                     <Text className="block text-base font-semibold text-gray-900">
                       {priceData.nextAdjustment.date}
                     </Text>
                   </View>
-                  <View className={`px-4 py-2 rounded-full ${getAdjustmentDirection(priceData.nextAdjustment.direction).bg}`}>
+                  <View
+                    className={`px-4 py-2 rounded-full ${getAdjustmentDirection(priceData.nextAdjustment.direction).bg}`}
+                  >
                     <Text
                       className={`text-sm font-semibold ${getAdjustmentDirection(priceData.nextAdjustment.direction).color}`}
                     >
@@ -162,29 +225,47 @@ const IndexPage = () => {
                     </Text>
                   </View>
                 </View>
-
-                <View className="flex flex-row items-center justify-between">
-                  <View>
-                    <Text className="block text-sm text-gray-500 mb-1">预测幅度</Text>
-                    <Text
-                      className={`block text-lg font-bold ${getChangeColor(priceData.nextAdjustment.expectedChange)}`}
-                    >
-                      {getChangeDisplay(priceData.nextAdjustment.expectedChange)}
-                    </Text>
-                  </View>
-                  <View className="text-right">
-                    <Text className="block text-sm text-gray-500 mb-1">倒计时</Text>
-                    <Text className="block text-base font-semibold text-gray-900">
-                      {priceData.nextAdjustment.daysRemaining} 天
-                    </Text>
-                  </View>
-                </View>
               </View>
             )}
 
+            {/* 快捷功能入口 */}
+            <View className="bg-white rounded-2xl p-4 shadow-sm">
+              <View className="grid grid-cols-2 gap-3">
+                <View
+                  className="bg-blue-50 rounded-xl p-4 flex flex-col items-center"
+                  onClick={navigateToHistory}
+                >
+                  <Text className="text-2xl mb-2">📈</Text>
+                  <Text className="text-sm font-semibold text-gray-900">历史价格</Text>
+                  <Text className="text-xs text-gray-500 mt-1">查看走势</Text>
+                </View>
+                <View
+                  className="bg-green-50 rounded-xl p-4 flex flex-col items-center"
+                  onClick={navigateToNotice}
+                >
+                  <Text className="text-2xl mb-2">🔔</Text>
+                  <Text className="text-sm font-semibold text-gray-900">调价提醒</Text>
+                  <Text className="text-xs text-gray-500 mt-1">开启通知</Text>
+                </View>
+                <View
+                  className="bg-purple-50 rounded-xl p-4 flex flex-col items-center"
+                  onClick={navigateToCityCompare}
+                >
+                  <Text className="text-2xl mb-2">🌍</Text>
+                  <Text className="text-sm font-semibold text-gray-900">多城市对比</Text>
+                  <Text className="text-xs text-gray-500 mt-1">查看差异</Text>
+                </View>
+                <View className="bg-orange-50 rounded-xl p-4 flex flex-col items-center">
+                  <Text className="text-2xl mb-2">💡</Text>
+                  <Text className="text-sm font-semibold text-gray-900">加油建议</Text>
+                  <Text className="text-xs text-gray-500 mt-1">省钱攻略</Text>
+                </View>
+              </View>
+            </View>
+
             {/* 提示信息 */}
-            <View className="bg-blue-50 rounded-lg p-4">
-              <Text className="block text-sm text-blue-600 text-center">
+            <View className="bg-blue-50 rounded-xl p-4">
+              <Text className="block text-xs text-blue-600 text-center">
                 提示：油价每10个工作日调整一次，具体以发改委公布为准
               </Text>
             </View>
@@ -194,6 +275,7 @@ const IndexPage = () => {
         {/* 空状态 */}
         {!loading && !priceData && (
           <View className="flex flex-col items-center justify-center py-12">
+            <Text className="block text-3xl mb-3">📭</Text>
             <Text className="block text-base text-gray-500 text-center">
               暂无数据
             </Text>

@@ -66,13 +66,14 @@
 }
 
 .city-search-input {
-  width: 100%;
+  flex: 1;
   height: 100%;
   font-size: 22px;
   color: #333;
   background: transparent;
   border: none;
   outline: none;
+  line-height: 60px;
 }
 
 /* 小程序 placeholder 样式 */
@@ -86,6 +87,7 @@
 .city-search-input::placeholder {
   font-size: 22px;
   color: #999;
+  line-height: 60px;
 }
 
 .city-list {

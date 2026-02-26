@@ -458,35 +458,133 @@ export class OilPriceService {
 
   // 从真实数据源获取油价数据
   private async fetchRealOilPrices() {
-    try {
-      this.logger.log('开始从真实数据源获取油价信息...')
+    // 优先使用天行数据 API
+    const tianapiKey = process.env.TIANAPI_KEY
+    const juheApiKey = process.env.JUHE_API_KEY
 
-      // 使用探数数据的免费 API（需要 key，这里使用公开的测试方法）
-      // 实际使用时，用户需要在环境变量中配置 TANSHU_API_KEY
-      const apiKey = process.env.TANSHU_API_KEY || ''
-
-      if (!apiKey) {
-        this.logger.warn('未配置 TANSHU_API_KEY，使用备选数据源...')
-        await this.fetchFromAlternativeSource()
+    if (tianapiKey) {
+      try {
+        this.logger.log('使用天行数据 API 获取油价...')
+        await this.fetchFromTianapi(tianapiKey)
         return
+      } catch (error) {
+        this.logger.error('天行数据 API 获取失败，尝试聚合数据 API:', error.message)
+        if (juheApiKey) {
+          try {
+            await this.fetchFromJuhe(juheApiKey)
+            return
+          } catch (juheError) {
+            this.logger.error('聚合数据 API 也失败，使用备选方案:', juheError.message)
+          }
+        }
       }
+    }
 
-      const apiUrl = `https://api.tanshuapi.com/api/youjia/v1/index?key=${apiKey}`
+    // 如果天行数据不可用，尝试聚合数据
+    if (juheApiKey && !tianapiKey) {
+      try {
+        this.logger.log('使用聚合数据 API 获取油价...')
+        await this.fetchFromJuhe(juheApiKey)
+        return
+      } catch (error) {
+        this.logger.error('聚合数据 API 获取失败，使用备选方案:', error.message)
+      }
+    }
 
+    // 都不可用，使用备选方案
+    await this.fetchFromAlternativeSource()
+  }
+
+  // 从天行数据 API 获取油价
+  private async fetchFromTianapi(apiKey: string) {
+    try {
+      this.logger.log('正在从天行数据 API 获取全国油价数据...')
+
+      const apiUrl = `http://api.tianapi.com/oilprice/index?key=${apiKey}`
       const data = await this.httpGet(apiUrl)
       const jsonData = JSON.parse(data)
 
-      if (jsonData.code === 200 && jsonData.data) {
-        this.parseRealData(jsonData.data)
-        this.dataCache.pricesFetched = true
-        this.dataCache.lastUpdate = new Date()
-        this.logger.log('成功获取真实油价数据')
-      } else {
-        throw new Error(`API 返回错误: ${jsonData.msg}`)
+      if (jsonData.code !== 200) {
+        throw new Error(`天行数据 API 返回错误: ${jsonData.msg}`)
       }
+
+      // 解析天行数据返回的数据
+      // 天行数据返回的是全国所有城市的数据列表
+      if (jsonData.result && Array.isArray(jsonData.result)) {
+        jsonData.result.forEach((item: any) => {
+          const cityName = item.city
+          if (cityName && !this.realCityPrices[cityName]) {
+            this.realCityPrices[cityName] = {
+              gas92: parseFloat(item.p92) || 7.89,
+              gas95: parseFloat(item.p95) || 8.37,
+              gas98: parseFloat(item.p98) || 9.13,
+              diesel0: parseFloat(item.p0) || 7.56,
+            }
+          }
+        })
+        this.logger.log(`成功从天行数据获取 ${jsonData.result.length} 个城市的数据`)
+      } else if (jsonData.result && typeof jsonData.result === 'object') {
+        // 单个城市数据
+        const cityName = jsonData.result.city
+        this.realCityPrices[cityName] = {
+          gas92: parseFloat(jsonData.result.p92) || 7.89,
+          gas95: parseFloat(jsonData.result.p95) || 8.37,
+          gas98: parseFloat(jsonData.result.p98) || 9.13,
+          diesel0: parseFloat(jsonData.result.p0) || 7.56,
+        }
+        this.logger.log(`成功从天行数据获取 ${cityName} 的数据`)
+      }
+
+      // 生成历史价格数据
+      this.generateRealHistoryData()
+
+      this.dataCache.pricesFetched = true
+      this.dataCache.lastUpdate = new Date()
+      this.logger.log('✅ 天行数据 API 油价数据获取成功')
     } catch (error) {
-      this.logger.error('从真实数据源获取油价失败，使用备选方案:', error.message)
-      await this.fetchFromAlternativeSource()
+      this.logger.error('天行数据 API 获取油价失败:', error.message)
+      throw error
+    }
+  }
+
+  // 从聚合数据 API 获取油价
+  private async fetchFromJuhe(apiKey: string) {
+    try {
+      this.logger.log('正在从聚合数据 API 获取全国油价数据...')
+
+      const apiUrl = `http://web.juhe.cn:8080/finance/oil/goldprice?key=${apiKey}`
+      const data = await this.httpGet(apiUrl)
+      const jsonData = JSON.parse(data)
+
+      if (jsonData.error_code !== 0) {
+        throw new Error(`聚合数据 API 返回错误: ${jsonData.reason}`)
+      }
+
+      // 解析聚合数据返回的数据
+      if (jsonData.result && Array.isArray(jsonData.result)) {
+        jsonData.result.forEach((item: any) => {
+          const cityName = item.prov
+          if (cityName && !this.realCityPrices[cityName]) {
+            this.realCityPrices[cityName] = {
+              gas92: parseFloat(item.p92) || 7.89,
+              gas95: parseFloat(item.p95) || 8.37,
+              gas98: parseFloat(item.p98) || 9.13,
+              diesel0: parseFloat(item.p0) || 7.56,
+            }
+          }
+        })
+        this.logger.log(`成功从聚合数据获取 ${jsonData.result.length} 个省份的数据`)
+      }
+
+      // 生成历史价格数据
+      this.generateRealHistoryData()
+
+      this.dataCache.pricesFetched = true
+      this.dataCache.lastUpdate = new Date()
+      this.logger.log('✅ 聚合数据 API 油价数据获取成功')
+    } catch (error) {
+      this.logger.error('聚合数据 API 获取油价失败:', error.message)
+      throw error
     }
   }
 
@@ -546,28 +644,6 @@ export class OilPriceService {
       this.logger.log('成功从备选数据源获取油价信息')
     } catch (error) {
       this.logger.error('从备选数据源获取油价失败:', error.message)
-    }
-  }
-
-  // 解析真实 API 返回的数据
-  private parseRealData(data: any) {
-    try {
-      // 解析 API 返回的油价数据
-      if (Array.isArray(data)) {
-        data.forEach((item: any) => {
-          const cityName = item.city || item.name
-          if (cityName && this.realCityPrices[cityName] === undefined) {
-            this.realCityPrices[cityName] = {
-              gas92: parseFloat(item.gas92 || item.v92 || item['92号']) || 7.89,
-              gas95: parseFloat(item.gas95 || item.v95 || item['95号']) || 8.37,
-              gas98: parseFloat(item.gas98 || item.v98 || item['98号']) || 9.13,
-              diesel0: parseFloat(item.diesel0 || item.v0 || item['0号柴油']) || 7.56,
-            }
-          }
-        })
-      }
-    } catch (error) {
-      this.logger.error('解析真实数据失败:', error.message)
     }
   }
 

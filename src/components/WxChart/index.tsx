@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { View } from '@tarojs/components'
-import * as echarts from 'echarts'  // 使用标准 echarts 包
+import * as echarts from 'echarts'
+import WxCanvas from './WxCanvas'
 import './index.css'
 
 interface WxChartProps {
@@ -52,7 +53,11 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
     }
 
     try {
-      const chart = echartsLib.init(canvas, null, {
+      // 使用 WxCanvas 包装微信小程序的 Canvas Context
+      const wxCanvas = new WxCanvas(canvas, canvasId, false, null)
+      console.log('WxChart: WxCanvas 包装成功')
+
+      const chart = echartsLib.init(wxCanvas, null, {
         width: width,
         height: heightValue,
         devicePixelRatio: 1

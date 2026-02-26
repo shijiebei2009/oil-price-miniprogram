@@ -17,13 +17,14 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
   // 保存最新的 option 到 ref
   useEffect(() => {
     optionRef.current = option
+    console.log('WxChart: option 更新', option)
   }, [option])
 
   useEffect(() => {
     if (optionRef.current && chartRef.current) {
       console.log('WxChart: 更新图表选项', optionRef.current)
       try {
-        chartRef.current.setOption(optionRef.current)
+        chartRef.current.setOption(optionRef.current, true) // 添加 notMerge 参数
       } catch (error) {
         console.error('WxChart: 设置图表选项失败', error)
       }
@@ -31,7 +32,13 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
   }, [option])
 
   const initChart = (canvas: any, width: number, heightValue: number) => {
-    console.log('WxChart: 初始化图表', { width, height: heightValue, canvasId, dataLength: optionRef.current?.series?.[0]?.data?.length })
+    console.log('WxChart: 初始化图表', {
+      width,
+      height: heightValue,
+      canvasId,
+      canvasType: typeof canvas,
+      dataLength: optionRef.current?.series?.[0]?.data?.length
+    })
 
     if (!canvas) {
       console.error('WxChart: canvas 参数为空')
@@ -45,7 +52,7 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
         devicePixelRatio: 1
       })
 
-      console.log('WxChart: ECharts 实例创建成功', optionRef.current)
+      console.log('WxChart: ECharts 实例创建成功')
       chart.setOption(optionRef.current)
       chartRef.current = chart
 
@@ -61,10 +68,10 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
   }
 
   return (
-    <View style={{ width: '100%', height: `${height}px` }}>
+    <View style={{ width: '100%', height: `${height}px`, position: 'relative' }}>
       {/* @ts-ignore */}
       <ec-canvas
-        id={`mychart-dom-${canvasId}`}
+        id={canvasId}
         canvas-id={canvasId}
         ec={{
           onInit: initChart,

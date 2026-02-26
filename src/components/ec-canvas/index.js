@@ -77,25 +77,35 @@ Component({
         .select(`#${this.data.canvasId}`)
         .fields({ node: true, size: true })
         .exec((res) => {
+          console.log('initNewCanvas: 查询结果', res)
+
           if (!res || !res[0]) {
-            console.error('未找到 canvas 节点')
+            console.error('initNewCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
             return
           }
 
           const canvasNode = res[0].node
+          console.log('initNewCanvas: canvas 节点获取成功')
 
           const canvas = this.data.ec.canvas = canvasNode
           const canvasWidth = this.data.ec.width = res[0].width
           const canvasHeight = this.data.ec.height = res[0].height
+          console.log('initNewCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
 
           const ctx = canvas.getContext('2d')
 
           const dpr = wx.getSystemInfoSync().pixelRatio
+          console.log('initNewCanvas: 设备像素比', dpr)
+
           canvas.width = canvasWidth * dpr
           canvas.height = canvasHeight * dpr
           ctx.scale(dpr, dpr)
+          console.log('initNewCanvas: canvas 尺寸已调整')
 
-          this.data.ec.onInit(canvas, canvasWidth, canvasHeight)
+          if (this.data.ec.onInit) {
+            console.log('initNewCanvas: 调用 onInit 回调')
+            this.data.ec.onInit(canvas, canvasWidth, canvasHeight)
+          }
         })
     },
 
@@ -105,21 +115,34 @@ Component({
         .select(`#${this.data.canvasId}`)
         .fields({ node: true, size: true })
         .exec((res) => {
+          console.log('initOldCanvas: 查询结果', res)
+
           if (!res || !res[0]) {
-            console.error('未找到 canvas 节点')
+            console.error('initOldCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
             return
           }
 
           const canvasWidth = res[0].width
           const canvasHeight = res[0].height
+          console.log('initOldCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
+
+          // 使用新版 API，即使是在旧版本中尝试
+          if (typeof wx.createCanvasContext === 'undefined') {
+            console.error('initOldCanvas: wx.createCanvasContext 不存在')
+            return
+          }
 
           const ctx = wx.createCanvasContext(this.data.canvasId, this)
+          console.log('initOldCanvas: canvas context 创建成功')
 
           this.data.ec.canvas = ctx
           this.data.ec.width = canvasWidth
           this.data.ec.height = canvasHeight
 
-          this.data.ec.onInit(ctx, canvasWidth, canvasHeight)
+          if (this.data.ec.onInit) {
+            console.log('initOldCanvas: 调用 onInit 回调')
+            this.data.ec.onInit(ctx, canvasWidth, canvasHeight)
+          }
         })
     },
 

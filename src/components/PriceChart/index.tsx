@@ -5,9 +5,6 @@ import * as echarts from 'echarts'
 import WxChart from '@/components/WxChart'
 import './index.css'
 
-// 声明微信小程序全局对象
-declare const wx: any
-
 interface PriceChartProps {
   data: Array<{
     date: string
@@ -360,7 +357,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
           <WxChart
             option={chartOption}
             height={height}
-            canvasId="mychart-canvas"
+            canvasId={`price-chart-canvas-${Date.now()}`}
           />
         </View>
       ) : (

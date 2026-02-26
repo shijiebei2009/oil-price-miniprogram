@@ -28,10 +28,15 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
         console.error('WxChart: 设置图表选项失败', error)
       }
     }
-  }, [])
+  }, [option])
 
   const initChart = (canvas: any, width: number, heightValue: number) => {
-    console.log('WxChart: 初始化图表', { width, height: heightValue, canvasId })
+    console.log('WxChart: 初始化图表', { width, height: heightValue, canvasId, dataLength: optionRef.current?.series?.[0]?.data?.length })
+
+    if (!canvas) {
+      console.error('WxChart: canvas 参数为空')
+      return null
+    }
 
     try {
       const chart = echarts.init(canvas, null, {

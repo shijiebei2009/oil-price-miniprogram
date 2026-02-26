@@ -110,16 +110,19 @@ const HistoryPage = () => {
       {/* 走势图区域 */}
       <View className="px-4 py-4">
         {historyData.length > 0 && (
-          <PriceChart
-            data={historyData.map((item) => ({
-              date: item.date,
-              price92: item.gas92,
-              price95: item.gas95,
-              price98: item.gas98,
-              priceDiesel: item.diesel0
-            }))}
-            height={300}
-          />
+          <>
+            {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
+            <PriceChart
+              data={historyData.map((item) => ({
+                date: item.date,
+                price92: item.gas92,
+                price95: item.gas95,
+                price98: item.gas98,
+                priceDiesel: item.diesel0
+              }))}
+              height={300}
+            />
+          </>
         )}
       </View>
 

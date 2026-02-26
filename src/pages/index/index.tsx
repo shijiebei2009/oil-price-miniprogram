@@ -180,11 +180,18 @@ const IndexPage = () => {
             </Text>
           </View>
           <View
-            className="flex items-center bg-white/20 rounded-full px-3 py-1"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: '9999px',
+              paddingLeft: '12px',
+              paddingRight: '12px',
+              paddingTop: '4px',
+              paddingBottom: '4px'
+            }}
             onClick={handleCityPickerOpen}
           >
-            <Text className="text-sm text-white">{currentCity}</Text>
-            <Text className="text-white ml-1 text-xs">▼</Text>
+            <Text className="block text-sm text-white">{currentCity}</Text>
+            <Text className="block text-white text-xs">▼</Text>
           </View>
         </View>
       </View>

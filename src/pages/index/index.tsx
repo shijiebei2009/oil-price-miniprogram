@@ -18,6 +18,7 @@ interface PriceData {
     direction: 'up' | 'down' | 'stable'
     expectedChange: number
     daysRemaining: number
+    trend?: string
   }
   updateTime: string
   cityName?: string
@@ -215,7 +216,7 @@ const IndexPage = () => {
                   </View>
                 </View>
 
-                <View className="flex flex-row items-center justify-between bg-gray-50 rounded-xl p-4">
+                <View className="flex flex-row items-center justify-between bg-gray-50 rounded-xl p-4 mb-3">
                   <View>
                     <Text className="block text-xs text-gray-500 mb-1">预计日期</Text>
                     <Text className="block text-base font-semibold text-gray-900">
@@ -232,6 +233,15 @@ const IndexPage = () => {
                     </Text>
                   </View>
                 </View>
+
+                {/* 趋势说明 */}
+                {priceData.nextAdjustment.trend && (
+                  <View className="bg-blue-50 rounded-lg px-3 py-2">
+                    <Text className="block text-xs text-blue-600">
+                      📊 {priceData.nextAdjustment.trend}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 

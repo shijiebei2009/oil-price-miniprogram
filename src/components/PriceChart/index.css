@@ -1,9 +1,36 @@
+/* 价格走势图组件样式 */
 .price-chart {
   width: 100%;
   background-color: #ffffff;
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 16px;
+}
+
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.export-btn {
+  padding: 4px 12px;
+  font-size: 12px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.export-btn:active {
+  background-color: #2563eb;
+}
+
+.export-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 .chart-placeholder {

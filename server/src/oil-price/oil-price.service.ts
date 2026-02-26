@@ -5,6 +5,7 @@ import http from 'http'
 export interface OilPrice {
   name: string
   price: number
+  previousPrice: number
   change: number
 }
 
@@ -495,54 +496,62 @@ export class OilPriceService {
     await this.fetchFromAlternativeSource()
   }
 
-  // 从天行数据 API 获取油价
+  // 从天聚数行 API 获取油价
   private async fetchFromTianapi(apiKey: string) {
     try {
-      this.logger.log('正在从天行数据 API 获取全国油价数据...')
+      this.logger.log('正在从天聚数行 API 获取全国油价数据...')
 
-      const apiUrl = `http://api.tianapi.com/oilprice/index?key=${apiKey}`
-      const data = await this.httpGet(apiUrl)
-      const jsonData = JSON.parse(data)
+      // 遍历所有省份，获取所有城市的数据
+      const provinces = Array.from(new Set(CITIES.map(city => city.province.replace(/[省市自治区]/g, ''))))
+      this.logger.log(`需要查询的省份列表: ${provinces.join(', ')}`)
 
-      if (jsonData.code !== 200) {
-        throw new Error(`天行数据 API 返回错误: ${jsonData.msg}`)
-      }
+      // 限制查询数量，避免超过 API 调用次数限制
+      // 只查询主要省份（前20个）
+      const provincesToQuery = provinces.slice(0, 20)
 
-      // 解析天行数据返回的数据
-      // 天行数据返回的是全国所有城市的数据列表
-      if (jsonData.result && Array.isArray(jsonData.result)) {
-        jsonData.result.forEach((item: any) => {
-          const cityName = item.city
-          if (cityName && !this.realCityPrices[cityName]) {
-            this.realCityPrices[cityName] = {
-              gas92: parseFloat(item.p92) || 7.89,
-              gas95: parseFloat(item.p95) || 8.37,
-              gas98: parseFloat(item.p98) || 9.13,
-              diesel0: parseFloat(item.p0) || 7.56,
+      for (const prov of provincesToQuery) {
+        try {
+          const apiUrl = `https://apis.tianapi.com/oilprice/index?key=${apiKey}&prov=${prov}`
+          const data = await this.httpGet(apiUrl)
+          const jsonData = JSON.parse(data)
+
+          this.logger.log(`天聚数行 API 返回数据（${prov}）:`, jsonData)
+
+          if (jsonData.code !== 200) {
+            this.logger.warn(`天聚数行 API 返回错误（${prov}）: ${jsonData.msg}`)
+            continue
+          }
+
+          // 解析天聚数行返回的数据
+          // 预期格式：{ code: 200, msg: 'success', result: { city: '武汉', p92: 7.89, p95: 8.37, p98: 9.13, p0: 7.56 } }
+          if (jsonData.result) {
+            const cityName = jsonData.result.city
+            if (cityName) {
+              this.realCityPrices[cityName] = {
+                gas92: parseFloat(jsonData.result.p92) || 7.89,
+                gas95: parseFloat(jsonData.result.p95) || 8.37,
+                gas98: parseFloat(jsonData.result.p98) || 9.13,
+                diesel0: parseFloat(jsonData.result.p0) || 7.56,
+              }
+              this.logger.log(`成功从天聚数行获取 ${cityName} 的数据`)
             }
           }
-        })
-        this.logger.log(`成功从天行数据获取 ${jsonData.result.length} 个城市的数据`)
-      } else if (jsonData.result && typeof jsonData.result === 'object') {
-        // 单个城市数据
-        const cityName = jsonData.result.city
-        this.realCityPrices[cityName] = {
-          gas92: parseFloat(jsonData.result.p92) || 7.89,
-          gas95: parseFloat(jsonData.result.p95) || 8.37,
-          gas98: parseFloat(jsonData.result.p98) || 9.13,
-          diesel0: parseFloat(jsonData.result.p0) || 7.56,
+        } catch (error) {
+          this.logger.warn(`获取 ${prov} 数据失败:`, error.message)
+          continue
         }
-        this.logger.log(`成功从天行数据获取 ${cityName} 的数据`)
       }
+
+      this.logger.log(`成功从天聚数行获取 ${Object.keys(this.realCityPrices).length} 个城市的数据`)
 
       // 生成历史价格数据
       this.generateRealHistoryData()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
-      this.logger.log('✅ 天行数据 API 油价数据获取成功')
+      this.logger.log('✅ 天聚数行 API 油价数据获取成功')
     } catch (error) {
-      this.logger.error('天行数据 API 获取油价失败:', error.message)
+      this.logger.error('天聚数行 API 获取油价失败:', error.message)
       throw error
     }
   }
@@ -732,26 +741,35 @@ export class OilPriceService {
     const previousHistory = this.realHistoryData[1]
 
     // 计算涨跌（与上一周期相比）
+    const change92 = latestHistory ? latestHistory.change : 0
+    const change95 = latestHistory ? latestHistory.change * 1.06 : 0
+    const change98 = latestHistory ? latestHistory.change * 1.16 : 0
+    const change0 = latestHistory ? latestHistory.change * 0.96 : 0
+
     const currentPrices: OilPrice[] = [
       {
         name: '92号汽油',
         price: cityPrice.gas92,
-        change: latestHistory ? latestHistory.change : 0
+        previousPrice: cityPrice.gas92 - change92,
+        change: change92
       },
       {
         name: '95号汽油',
         price: cityPrice.gas95,
-        change: latestHistory ? latestHistory.change * 1.06 : 0
+        previousPrice: cityPrice.gas95 - change95,
+        change: change95
       },
       {
         name: '98号汽油',
         price: cityPrice.gas98,
-        change: latestHistory ? latestHistory.change * 1.16 : 0
+        previousPrice: cityPrice.gas98 - change98,
+        change: change98
       },
       {
         name: '0号柴油',
         price: cityPrice.diesel0,
-        change: latestHistory ? latestHistory.change * 0.96 : 0
+        previousPrice: cityPrice.diesel0 - change0,
+        change: change0
       },
     ]
 

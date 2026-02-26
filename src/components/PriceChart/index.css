@@ -18,10 +18,10 @@
 .export-button {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 10px 20px;
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   transition: all 0.3s ease;
 }
@@ -37,12 +37,12 @@
 }
 
 .export-icon {
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .export-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #ffffff;
   font-weight: 500;
   line-height: 1;

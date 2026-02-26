@@ -249,41 +249,30 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
             }
           }
 
-          // 3. 使用 wx.canvasToTempFilePath 导出
-          await new Promise((resolve, reject) => {
-            wx.canvasToTempFilePath({
-              canvasId: 'mychart-canvas',
-              success: (res: any) => {
-                console.log('图表导出成功', res.tempFilePath)
+          // 3. 使用 Taro.canvasToTempFilePath 导出
+          const res = await Taro.canvasToTempFilePath({
+            canvasId: 'mychart-canvas',
+            fileType: 'png',
+            quality: 1
+          })
 
-                // 4. 保存到相册
-                wx.saveImageToPhotosAlbum({
-                  filePath: res.tempFilePath,
-                  success: () => {
-                    Taro.hideLoading()
-                    Taro.showModal({
-                      title: '导出成功',
-                      content: '图片已保存到相册',
-                      showCancel: false
-                    })
-                    resolve(null)
-                  },
-                  fail: (err: any) => {
-                    Taro.hideLoading()
-                    console.error('保存到相册失败', err)
-                    reject(err)
-                  }
-                })
-              },
-              fail: (err: any) => {
-                Taro.hideLoading()
-                console.error('图表导出失败', err)
-                reject(err)
-              }
-            })
+          console.log('图表导出成功', res.tempFilePath)
+
+          // 4. 保存到相册
+          await Taro.saveImageToPhotosAlbum({
+            filePath: res.tempFilePath
+          })
+
+          Taro.hideLoading()
+          Taro.showModal({
+            title: '导出成功',
+            content: '图片已保存到相册',
+            showCancel: false
           })
         } catch (error: any) {
           Taro.hideLoading()
+          console.error('导出失败:', error)
+
           if (error.errMsg && error.errMsg.includes('auth deny')) {
             Taro.showModal({
               title: '权限说明',

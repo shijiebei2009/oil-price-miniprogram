@@ -9,6 +9,7 @@ import './index.css'
 interface OilPrice {
   name: string
   price: number
+  previousPrice: number
   change: number
 }
 
@@ -181,17 +182,42 @@ const IndexPage = () => {
           </View>
           <View
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              borderRadius: '9999px',
-              paddingLeft: '12px',
-              paddingRight: '12px',
-              paddingTop: '4px',
-              paddingBottom: '4px'
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              borderRadius: '20px',
+              paddingLeft: '16px',
+              paddingRight: '8px',
+              paddingTop: '8px',
+              paddingBottom: '8px',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: '8px'
             }}
             onClick={handleCityPickerOpen}
           >
-            <Text className="block text-sm text-white">{currentCity}</Text>
-            <Text className="block text-white text-xs">▼</Text>
+            <Text className="block text-sm font-semibold text-white">{currentCity}</Text>
+            <View
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: '10px',
+                  color: 'white',
+                  lineHeight: 1,
+                  marginTop: '2px'
+                }}
+              >
+                ▼
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -237,6 +263,11 @@ const IndexPage = () => {
                     <Text className={`block text-sm ${getChangeColor(item.change)}`}>
                       {getChangeDisplay(item.change)}
                     </Text>
+                    {item.previousPrice !== undefined && (
+                      <Text className="block text-xs text-gray-400 mt-1">
+                        上次：{item.previousPrice.toFixed(2)}
+                      </Text>
+                    )}
                   </View>
                 </View>
               ))}

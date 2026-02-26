@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { View } from '@tarojs/components'
 import * as echarts from 'echarts'
-import WxCanvas from './WxCanvas'
 import './index.css'
 
 interface WxChartProps {
@@ -32,14 +31,13 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
     }
   }, [option])
 
-  const initChart = (canvas: any, width: number, heightValue: number, echartsLib: any) => {
-    console.log('WxChart: 初始化图表', {
+  const initChart = (canvas: any, width: number, heightValue: number) => {
+    console.log('WxChart: 初始化图表（echarts-for-weixin 官方方式）', {
       width,
       height: heightValue,
       canvasId,
       canvasType: typeof canvas,
-      dataLength: optionRef.current?.series?.[0]?.data?.length,
-      hasEcharts: !!echartsLib
+      dataLength: optionRef.current?.series?.[0]?.data?.length
     })
 
     if (!canvas) {
@@ -47,17 +45,11 @@ const WxChart: React.FC<WxChartProps> = ({ option, height = 300, onReady, canvas
       return null
     }
 
-    if (!echartsLib) {
-      console.error('WxChart: echarts 库未传入，无法初始化图表')
-      return null
-    }
-
     try {
-      // 使用 WxCanvas 包装微信小程序的 Canvas Context
-      const wxCanvas = new WxCanvas(canvas, canvasId, false, null)
-      console.log('WxChart: WxCanvas 包装成功')
-
-      const chart = echartsLib.init(wxCanvas, null, {
+      // 使用 echarts.init 初始化图表
+      // echarts-for-weixin 已经通过 setCanvasCreator 设置了 Canvas 创建器
+      // canvas 参数已经是 WxCanvas 实例
+      const chart = echarts.init(canvas, null, {
         width: width,
         height: heightValue,
         devicePixelRatio: 1

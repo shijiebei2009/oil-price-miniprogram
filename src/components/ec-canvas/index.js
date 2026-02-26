@@ -1,5 +1,7 @@
-/* global wx, Component */
-// 复制自 echarts-for-weixin/miniprogram_dist/index.js
+import WxCanvas from './wx-canvas';
+
+let ctx;
+
 function compareVersion(v1, v2) {
   v1 = v1.split('.')
   v2 = v2.split('.')
@@ -31,12 +33,15 @@ Component({
       type: String,
       value: 'ec-canvas'
     },
-    ec: {
-      type: Object
-    },
+
     echarts: {
       type: Object
     },
+
+    ec: {
+      type: Object
+    },
+
     forceUseOldCanvas: {
       type: Boolean,
       value: false
@@ -47,196 +52,207 @@ Component({
     isUseNewCanvas: false
   },
 
-    ready: function () {
-      console.log('ec-canvas: ready 生命周期触发')
-      console.log('ec-canvas: canvasId', this.data.canvasId)
-      console.log('ec-canvas: ec 对象', this.data.ec)
-      console.log('ec-canvas: echarts 对象', this.data.echarts)
+  ready: function () {
+    if (!this.data.echarts) {
+      console.warn('组件需要传入 echarts')
+      return;
+    }
 
-      if (!this.data.ec) {
-        console.warn('组件需绑定 ec 变量，例如：<ec-canvas id="mychart-dom-bar" canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>')
-        return
+    // Disable prograssive because drawImage doesn't support DOM as parameter
+    // See https://developers.weixin.qq.com/miniprogram/dev/api/canvas/CanvasContext.drawImage.html
+    this.data.echarts.registerPreprocessor(option => {
+      if (option && option.series) {
+        if (option.series.length > 0) {
+          option.series.forEach(series => {
+            series.progressive = 0;
+          });
+        }
+        else if (typeof option.series === 'object') {
+          option.series.progressive = 0;
+        }
       }
+    });
 
-      if (!this.data.ec.lazyLoad) {
-        console.log('ec-canvas: 延迟 200ms 后开始初始化，确保 DOM 已渲染')
-        // 延迟初始化，确保父容器已经渲染完成
-        setTimeout(() => {
-          this.init()
-        }, 200)
-      } else {
-        console.log('ec-canvas: 延迟初始化模式，等待手动调用 init()')
-      }
-    },
+    if (!this.data.ec) {
+      console.warn('组件需绑定 ec 变量，例：<ec-canvas id="mychart-dom-bar" '
+        + 'canvas-id="mychart-bar" ec="{{ ec }}"></ec-canvas>');
+      return;
+    }
+
+    if (!this.data.ec.lazyLoad) {
+      this.init();
+    }
+  },
 
   methods: {
-    init: function () {
+    init: function (callback) {
       const version = wx.getSystemInfoSync().SDKVersion
 
-      const canUseNewCanvas = compareVersion(version, '2.9.0') >= 0
-      const forceUseOldCanvas = this.data.forceUseOldCanvas
+      const canUseNewCanvas = compareVersion(version, '2.9.0') >= 0;
+      const forceUseOldCanvas = this.data.forceUseOldCanvas;
+      const isUseNewCanvas = canUseNewCanvas && !forceUseOldCanvas;
+      this.setData({ isUseNewCanvas });
 
-      console.log('ec-canvas: 初始化', {
-        version,
-        canUseNewCanvas,
-        forceUseOldCanvas
-      })
+      if (forceUseOldCanvas && canUseNewCanvas) {
+        console.warn('开发者强制使用旧canvas,建议关闭');
+      }
 
-      // 🔴 强制使用旧版 Canvas，因为新版 Canvas 不兼容 ECharts
-      // 新版 Canvas 返回的节点对象没有 addEventListener 等 DOM 方法
-      console.log('ec-canvas: 强制使用旧版 Canvas API (兼容 ECharts)')
-      this.setData({ isUseNewCanvas: false })
-      this.initOldCanvas()
-
-      // 原来的逻辑：
-      // if (forceUseOldCanvas || !canUseNewCanvas) {
-      //   this.setData({ isUseNewCanvas: false })
-      //   this.initOldCanvas()
-      // } else {
-      //   this.setData({ isUseNewCanvas: true })
-      //   this.initNewCanvas()
-      // }
+      if (isUseNewCanvas) {
+        // console.log('微信基础库版本大于2.9.0，开始使用<canvas type="2d"/>');
+        // 2.9.0 可以使用 <canvas type="2d"></canvas>
+        this.initByNewWay(callback);
+      } else {
+        const isValid = compareVersion(version, '1.9.91') >= 0
+        if (!isValid) {
+          console.error('微信基础库版本过低，需大于等于 1.9.91。'
+            + '参见：https://github.com/ecomfe/echarts-for-weixin'
+            + '#%E5%BE%AE%E4%BF%A1%E7%89%88%E6%9C%AC%E8%A6%81%E6%B1%82');
+          return;
+        } else {
+          console.warn('建议将微信基础库调整大于等于2.9.0版本。升级后绘图将有更好性能');
+          this.initByOldWay(callback);
+        }
+      }
     },
 
-    initNewCanvas: function () {
-      console.log('initNewCanvas: 开始查询 canvas 节点，canvasId:', this.data.canvasId)
+    initByOldWay(callback) {
+      // 1.9.91 <= version < 2.9.0：原来的方式初始化
+      ctx = wx.createCanvasContext(this.data.canvasId, this);
+      const canvas = new WxCanvas(ctx, this.data.canvasId, false);
+
+      this.data.echarts.setCanvasCreator(() => {
+        return canvas;
+      });
+      // const canvasDpr = wx.getSystemInfoSync().pixelRatio // 微信旧的canvas不能传入dpr
+      const canvasDpr = 1
+      var query = wx.createSelectorQuery().in(this);
+      query.select('.ec-canvas').boundingClientRect(res => {
+        if (typeof callback === 'function') {
+          this.chart = callback(canvas, res.width, res.height, canvasDpr);
+        }
+        else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
+          this.chart = this.data.ec.onInit(canvas, res.width, res.height, canvasDpr);
+        }
+        else {
+          this.triggerEvent('init', {
+            canvas: canvas,
+            width: res.width,
+            height: res.height,
+            canvasDpr: canvasDpr // 增加了dpr，可方便外面echarts.init
+          });
+        }
+      }).exec();
+    },
+
+    initByNewWay(callback) {
+      // version >= 2.9.0：使用新的方式初始化
       const query = wx.createSelectorQuery().in(this)
       query
-        .select(`#${this.data.canvasId}`)
+        .select('.ec-canvas')
         .fields({ node: true, size: true })
-        .exec((res) => {
-          console.log('initNewCanvas: 查询结果', res)
-
-          if (!res || !res[0]) {
-            console.error('initNewCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
-            console.error('initNewCanvas: 请检查以下几点：')
-            console.error('  1. canvasId 是否正确')
-            console.error('  2. 父容器是否有明确的宽度和高度')
-            console.error('  3. Canvas 组件是否已正确渲染')
-            return
-          }
-
+        .exec(res => {
           const canvasNode = res[0].node
+          this.canvasNode = canvasNode
+
+          const canvasDpr = wx.getSystemInfoSync().pixelRatio
           const canvasWidth = res[0].width
           const canvasHeight = res[0].height
 
-          console.log('initNewCanvas: canvas 节点获取成功')
-          console.log('initNewCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
+          const ctx = canvasNode.getContext('2d')
 
-          // 检查尺寸是否为 0
-          if (canvasWidth === 0 || canvasHeight === 0) {
-            console.error('initNewCanvas: Canvas 尺寸为 0！无法初始化图表')
-            console.error('initNewCanvas: 父容器尺寸可能不正确，请检查父容器的 width 和 height')
-            return
-          }
-
-          const canvas = this.data.ec.canvas = canvasNode
-          this.data.ec.width = canvasWidth
-          this.data.ec.height = canvasHeight
-
-          const ctx = canvas.getContext('2d')
-
-          const dpr = wx.getSystemInfoSync().pixelRatio
-          console.log('initNewCanvas: 设备像素比', dpr)
-
-          canvas.width = canvasWidth * dpr
-          canvas.height = canvasHeight * dpr
-          ctx.scale(dpr, dpr)
-          console.log('initNewCanvas: canvas 尺寸已调整', {
-            width: canvas.width,
-            height: canvas.height,
-            scale: dpr
+          const canvas = new WxCanvas(ctx, this.data.canvasId, true, canvasNode)
+          this.data.echarts.setCanvasCreator(() => {
+            return canvas
           })
 
-          if (this.data.ec.onInit) {
-            console.log('initNewCanvas: 调用 onInit 回调')
-            this.data.ec.onInit(canvas, canvasWidth, canvasHeight)
+          if (typeof callback === 'function') {
+            this.chart = callback(canvas, canvasWidth, canvasHeight, canvasDpr)
+          } else if (this.data.ec && typeof this.data.ec.onInit === 'function') {
+            this.chart = this.data.ec.onInit(canvas, canvasWidth, canvasHeight, canvasDpr)
+          } else {
+            this.triggerEvent('init', {
+              canvas: canvas,
+              width: canvasWidth,
+              height: canvasHeight,
+              dpr: canvasDpr
+            })
           }
         })
     },
-
-    initOldCanvas: function () {
-      console.log('initOldCanvas: 开始查询 canvas 尺寸，canvasId:', this.data.canvasId)
-      const query = wx.createSelectorQuery().in(this)
-      query
-        .select(`#${this.data.canvasId}`)
-        .fields({ size: true })
-        .exec((res) => {
-          console.log('initOldCanvas: 查询结果', res)
-
-          if (!res || !res[0]) {
-            console.error('initOldCanvas: 未找到 canvas 节点，canvasId:', this.data.canvasId)
-            return
-          }
-
-          const canvasWidth = res[0].width
-          const canvasHeight = res[0].height
-
-          console.log('initOldCanvas: canvas 尺寸', { width: canvasWidth, height: canvasHeight })
-
-          // 检查尺寸是否为 0
-          if (canvasWidth === 0 || canvasHeight === 0) {
-            console.error('initOldCanvas: Canvas 尺寸为 0！无法初始化图表')
-            console.error('initOldCanvas: 父容器尺寸可能不正确，请检查父容器的 width 和 height')
-            return
-          }
-
-          // 使用旧版 Canvas API
-          if (typeof wx.createCanvasContext === 'undefined') {
-            console.error('initOldCanvas: wx.createCanvasContext 不存在')
-            return
-          }
-
-          const ctx = wx.createCanvasContext(this.data.canvasId, this)
-          console.log('initOldCanvas: canvas context 创建成功')
-
-          this.data.ec.canvas = ctx
-          this.data.ec.width = canvasWidth
-          this.data.ec.height = canvasHeight
-
-          if (this.data.ec.onInit) {
-            console.log('initOldCanvas: 调用 onInit 回调')
-            // 将 echarts 实例作为第四个参数传递
-            this.data.ec.onInit(ctx, canvasWidth, canvasHeight, this.data.echarts)
-          }
-        })
-    },
-
-    canvasToTempFilePath: function (opt) {
+    canvasToTempFilePath(opt) {
       if (this.data.isUseNewCanvas) {
+        // 新版
         const query = wx.createSelectorQuery().in(this)
         query
-          .select(`#${this.data.canvasId}`)
+          .select('.ec-canvas')
           .fields({ node: true, size: true })
-          .exec((res) => {
+          .exec(res => {
             const canvasNode = res[0].node
             opt.canvas = canvasNode
             wx.canvasToTempFilePath(opt)
           })
       } else {
+        // 旧的
         if (!opt.canvasId) {
-          opt.canvasId = this.data.canvasId
+          opt.canvasId = this.data.canvasId;
         }
-        wx.canvasToTempFilePath(opt, this)
+        ctx.draw(true, () => {
+          wx.canvasToTempFilePath(opt, this);
+        });
       }
     },
 
-    touchStart: function (e) {
-      if (this.data.ec && this.data.ec.onTouchStart) {
-        this.data.ec.onTouchStart(e)
+    touchStart(e) {
+      if (this.chart && e.touches.length > 0) {
+        var touch = e.touches[0];
+        var handler = this.chart.getZr().handler;
+        handler.dispatch('mousedown', {
+          zrX: touch.x,
+          zrY: touch.y
+        });
+        handler.dispatch('mousemove', {
+          zrX: touch.x,
+          zrY: touch.y
+        });
+        handler.processGesture(wrapTouch(e), 'start');
       }
     },
 
-    touchMove: function (e) {
-      if (this.data.ec && this.data.ec.onTouchMove) {
-        this.data.ec.onTouchMove(e)
+    touchMove(e) {
+      if (this.chart && e.touches.length > 0) {
+        var touch = e.touches[0];
+        var handler = this.chart.getZr().handler;
+        handler.dispatch('mousemove', {
+          zrX: touch.x,
+          zrY: touch.y
+        });
+        handler.processGesture(wrapTouch(e), 'change');
       }
     },
 
-    touchEnd: function (e) {
-      if (this.data.ec && this.data.ec.onTouchEnd) {
-        this.data.ec.onTouchEnd(e)
+    touchEnd(e) {
+      if (this.chart) {
+        const touch = e.changedTouches ? e.changedTouches[0] : {};
+        var handler = this.chart.getZr().handler;
+        handler.dispatch('mouseup', {
+          zrX: touch.x,
+          zrY: touch.y
+        });
+        handler.dispatch('click', {
+          zrX: touch.x,
+          zrY: touch.y
+        });
+        handler.processGesture(wrapTouch(e), 'end');
       }
     }
   }
-})
+});
+
+function wrapTouch(event) {
+  for (let i = 0; i < event.touches.length; ++i) {
+    const touch = event.touches[i];
+    touch.offsetX = touch.x;
+    touch.offsetY = touch.y;
+  }
+  return event;
+}

@@ -33,6 +33,7 @@
     "ios >= 8"
   ],
   "dependencies": {
+    "@antv/f2": "^5.14.0",
     "@babel/runtime": "^7.24.4",
     "@tarojs/components": "4.1.9",
     "@tarojs/helper": "4.1.9",

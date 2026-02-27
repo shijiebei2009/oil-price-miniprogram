@@ -1,5 +1,6 @@
-import { View, Text } from '@tarojs/components'
-import { Line } from 'react-chartjs-2'
+import { View, Text, Canvas } from '@tarojs/components'
+import { useEffect, useRef } from 'react'
+import Taro from '@tarojs/taro'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,6 +30,9 @@ interface ChartJsProps {
 }
 
 const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
+  const chartRef = useRef<any>(null)
+  const canvasId = useRef(`chart-canvas-${Date.now()}-${Math.random()}`)
+
   // 转换数据格式（从 F2 格式转换为 Chart.js 格式）
   const labels = data.map((item: any) => item.date)
   const datasets: any[] = []
@@ -58,7 +62,7 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
   }
 
   const options = {
-    responsive: true,
+    responsive: false,
     maintainAspectRatio: false,
     plugins: {
       legend: {
@@ -85,6 +89,86 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
     }
   }
 
+  // 初始化图表
+  useEffect(() => {
+    if (!data || data.length === 0) return
+
+    const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+
+    const initChart = () => {
+      try {
+        // 销毁旧图表
+        if (chartRef.current) {
+          chartRef.current.destroy()
+          chartRef.current = null
+        }
+
+        let ctx: any
+
+        if (isWeapp) {
+          // 小程序端使用 Taro Canvas 2D
+          const query = Taro.createSelectorQuery()
+          query.select(`#${canvasId.current}`)
+            .fields({ node: true, size: true })
+            .exec((res: any) => {
+              if (res && res[0]) {
+                const canvas = res[0].node
+                ctx = canvas.getContext('2d')
+
+                // 设置 Canvas 尺寸
+                const dpr = Taro.getSystemInfoSync().pixelRatio || 1
+                canvas.width = res[0].width * dpr
+                canvas.height = res[0].height * dpr
+                ctx.scale(dpr, dpr)
+
+                // 创建图表
+                chartRef.current = new ChartJS(ctx, {
+                  type: 'line',
+                  data: chartData,
+                  options: {
+                    ...options,
+                    responsive: true,
+                    maintainAspectRatio: false
+                  }
+                })
+              }
+            })
+        } else {
+          // H5 端使用标准 Canvas
+          const canvasEl = document.getElementById(canvasId.current) as HTMLCanvasElement
+          if (canvasEl) {
+            ctx = canvasEl.getContext('2d')
+            if (ctx) {
+              chartRef.current = new ChartJS(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                  ...options,
+                  responsive: true,
+                  maintainAspectRatio: false
+                }
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('ChartJs: 初始化图表失败', error)
+      }
+    }
+
+    // 延迟初始化确保 DOM 已渲染
+    const timer = setTimeout(initChart, 100)
+
+    return () => {
+      clearTimeout(timer)
+      if (chartRef.current) {
+        chartRef.current.destroy()
+        chartRef.current = null
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, config, height])
+
   if (!data || data.length === 0) {
     return (
       <View className="w-full flex items-center justify-center" style={{ height: `${height}px` }}>
@@ -93,14 +177,36 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
     )
   }
 
-  return (
-    <View
-      className="w-full"
-      style={{ height: `${height}px`, position: 'relative' }}
-    >
-      <Line data={chartData} options={options} />
-    </View>
-  )
+  const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+
+  if (isWeapp) {
+    // 小程序端使用 Taro Canvas 2D
+    return (
+      <View
+        className="w-full"
+        style={{ height: `${height}px`, position: 'relative' }}
+      >
+        <Canvas
+          id={canvasId.current}
+          type="2d"
+          style={{ width: '100%', height: '100%' }}
+        />
+      </View>
+    )
+  } else {
+    // H5 端使用标准 Canvas
+    return (
+      <View
+        className="w-full"
+        style={{ height: `${height}px`, position: 'relative' }}
+      >
+        <canvas
+          id={canvasId.current}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </View>
+    )
+  }
 }
 
 export default ChartJs

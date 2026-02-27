@@ -77,21 +77,43 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
     plugins: {
       legend: {
         display: config.legend !== false,
-        position: 'top' as const
+        position: 'top' as const,
+        labels: {
+          padding: 15,
+          usePointStyle: true
+        }
       },
       tooltip: {
         mode: 'index' as const,
-        intersect: false
+        intersect: false,
+        padding: 12
       }
     },
     scales: {
       x: {
         grid: {
           display: false
+        },
+        ticks: {
+          maxRotation: 45,
+          minRotation: 45,
+          padding: 10,
+          maxTicksLimit: 10
         }
       },
       y: {
-        beginAtZero: false
+        beginAtZero: false,
+        ticks: {
+          padding: 10
+        }
+      }
+    },
+    layout: {
+      padding: {
+        top: 20,
+        bottom: 10,
+        left: 10,
+        right: 10
       }
     },
     animation: {

@@ -120,7 +120,7 @@ const HistoryPage = () => {
                 gas98: item.gas98,
                 diesel0: item.diesel0
               }))}
-              height={300}
+              height={350}
             />
           </>
         )}
@@ -141,12 +141,12 @@ const HistoryPage = () => {
             <Text className="block text-base font-semibold mb-3">价格记录</Text>
 
             {historyData.map((item, index) => (
-              <View key={index} className="bg-white rounded-xl p-4 mb-2 shadow-sm">
+              <View key={index} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
                 <View className="flex flex-row items-center justify-between mb-3">
                   <Text className="block text-sm font-semibold text-gray-900">
                     {item.date}
                   </Text>
-                  <Text className={`text-sm font-semibold ${getChangeColor(item.change)}`}>
+                  <Text className={`block text-sm font-semibold ${getChangeColor(item.change)}`}>
                     {getChangeDisplay(item.change)}
                   </Text>
                 </View>

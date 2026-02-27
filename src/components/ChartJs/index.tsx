@@ -173,14 +173,22 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
                 }
               }
 
-              // 添加 canvas 引用到 context
-              ctx.canvas = canvasWrapper
+              // CRITICAL: 不直接修改 context.canvas，而是使用 Object.defineProperty
+              // 避免修改只读属性
+              try {
+                Object.defineProperty(ctx, 'canvas', {
+                  value: canvasWrapper,
+                  writable: false,
+                  configurable: false
+                })
+              } catch (e) {
+                // 如果 Object.defineProperty 失败，尝试直接赋值
+                ;(ctx as any).canvas = canvasWrapper
+              }
 
-              // 设置 Canvas 尺寸
-              const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-              canvas.width = res[0].width * dpr
-              canvas.height = res[0].height * dpr
-              ctx.scale(dpr, dpr)
+              // CRITICAL: 小程序 Canvas 2D 不需要手动设置 width/height 和 scale
+              // 这些已经在创建 Canvas 时通过 DPR 自动处理
+              // 直接使用 Canvas 的原始尺寸
 
               // 创建图表
               console.log('ChartJs: 创建 Chart.js 实例')
@@ -188,7 +196,15 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
               chartRef.current = new ChartJS(ctx, {
                 type: 'line',
                 data: chartData,
-                options
+                options: {
+                  ...options,
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  // 明确指定画布尺寸，避免 Chart.js 尝试读取 getAttribute
+                  animation: {
+                    duration: 0
+                  }
+                }
               })
 
               console.log('ChartJs: 图表创建成功')

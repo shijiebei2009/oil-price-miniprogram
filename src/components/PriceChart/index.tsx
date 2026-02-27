@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import F2Chart from '@/components/F2Chart'
+import ChartJs from '@/components/ChartJs'
 import './index.css'
 
 interface PriceChartProps {
@@ -14,9 +14,45 @@ interface PriceChartProps {
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
-  // F2 图表配置（现在 F2Chart 会自动处理）
+  // Chart.js 图表配置
   const chartConfig = {
-    padding: [40, 20, 80, 60],
+    padding: ['auto', 'auto', '60', 'auto'],
+    geoms: [
+      {
+        type: 'line',
+        position: '*gas92',
+        color: '#1890ff',
+        shape: 'smooth',
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*gas95',
+        color: '#52c41a',
+        shape: 'smooth',
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*gas98',
+        color: '#faad14',
+        shape: 'smooth',
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*diesel0',
+        color: '#8c8c8c',
+        shape: 'smooth',
+        size: 2
+      }
+    ],
+    dataMapping: {
+      gas92: '92#汽油',
+      gas95: '95#汽油',
+      gas98: '98#汽油',
+      diesel0: '0#柴油'
+    },
     legend: true,
     tooltip: true
   }
@@ -44,7 +80,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
       {/* 图表区域 */}
       <View className="chart-container">
-        <F2Chart
+        <ChartJs
           data={data}
           config={chartConfig}
           height={height}

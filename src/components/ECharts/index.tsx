@@ -120,8 +120,7 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
       left: '3%',
       right: '4%',
       bottom: '3%',
-      top: 60,
-      containLabel: true
+      top: 60
     },
     xAxis: {
       type: 'category',

@@ -162,17 +162,19 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
                 height: res[0].height
               })
 
-              // CRITICAL: 添加 canvas 引用到 context（Chart.js 需要）
-              // Chart.js 会通过 ctx.canvas 访问 canvas 元素
-              ctx.canvas = canvas
-
-              // CRITICAL: 添加 Chart.js 需要的方法到 mini-program canvas
-              // Chart.js 会调用这些方法
-              canvas.getAttribute = (attr: string) => {
-                if (attr === 'width') return canvas.width.toString()
-                if (attr === 'height') return canvas.height.toString()
-                return null
+              // CRITICAL: 创建 canvas 包装对象，添加 Chart.js 需要的方法
+              // 小程序 canvas 的属性是只读的，不能直接添加方法
+              const canvasWrapper = {
+                ...canvas,
+                getAttribute: (attr: string) => {
+                  if (attr === 'width') return canvas.width.toString()
+                  if (attr === 'height') return canvas.height.toString()
+                  return null
+                }
               }
+
+              // 添加 canvas 引用到 context
+              ctx.canvas = canvasWrapper
 
               // 设置 Canvas 尺寸
               const dpr = Taro.getSystemInfoSync().pixelRatio || 1

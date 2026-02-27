@@ -115,10 +115,10 @@ const HistoryPage = () => {
             <PriceChart
               data={historyData.map((item) => ({
                 date: item.date,
-                price92: item.gas92,
-                price95: item.gas95,
-                price98: item.gas98,
-                priceDiesel: item.diesel0
+                gas92: item.gas92,
+                gas95: item.gas95,
+                gas98: item.gas98,
+                diesel0: item.diesel0
               }))}
               height={300}
             />

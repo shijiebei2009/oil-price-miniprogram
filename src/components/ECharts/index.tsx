@@ -13,6 +13,9 @@ import {
   GridComponent,
   LegendComponent
 } from 'echarts/components'
+import {
+  CanvasRenderer
+} from 'echarts/renderers'
 
 // 注册必需的组件
 echarts.use([
@@ -20,7 +23,8 @@ echarts.use([
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  CanvasRenderer  // 注册 Canvas 渲染器
 ])
 
 interface EChartsProps {
@@ -164,19 +168,13 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
 
               if (res && res[0] && res[0].node) {
                 const canvas = res[0].node
-                const ctx = canvas.getContext('2d')
 
                 // 小程序需要手动设置 canvas 尺寸
                 const dpr = Taro.getSystemInfoSync().pixelRatio || 1
                 canvas.width = res[0].width * dpr
                 canvas.height = res[0].height * dpr
-                ctx.scale(dpr, dpr)
 
-                // 使用 ECharts 的 Canvas 渲染器
-                echarts.setPlatformAPI({
-                  createCanvas: () => canvas
-                })
-
+                // ECharts 5.x 小程序端初始化
                 chartRef.current = echarts.init(canvas, null, {
                   renderer: 'canvas',
                   width: res[0].width,

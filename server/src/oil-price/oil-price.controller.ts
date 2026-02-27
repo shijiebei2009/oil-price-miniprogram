@@ -62,11 +62,11 @@ export class OilPriceController {
     }
   }
 
-  // 获取历史价格
+  // 获取历史价格（按调价次数查询）
   @Get('history')
-  getHistoryPrice(@Query('days') days?: string) {
-    console.log('收到获取历史价格请求，天数:', days)
-    const data = this.oilPriceService.getHistoryPrice(days ? parseInt(days) : 30)
+  getHistoryPrice(@Query('count') count?: string) {
+    console.log('收到获取历史价格请求，调价次数:', count)
+    const data = this.oilPriceService.getHistoryPrice(count ? parseInt(count) : 10)
 
     console.log('返回响应:', {
       code: 200,

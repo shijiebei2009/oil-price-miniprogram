@@ -20,22 +20,22 @@ const HistoryPage = () => {
   const [selectedRange, setSelectedRange] = useState(7) // 默认7天
 
   const timeRanges = [
-    { label: '近7天', value: 7 },
-    { label: '近30天', value: 30 },
-    { label: '近90天', value: 90 },
-    { label: '全部', value: 180 },
+    { label: '近5次', value: 5 },
+    { label: '近10次', value: 10 },
+    { label: '近15次', value: 15 },
+    { label: '全部', value: 20 },
   ]
 
   // 加载历史价格数据
-  const loadHistoryData = async (days: number) => {
+  const loadHistoryData = async (count: number) => {
     try {
       setLoading(true)
-      console.log('开始获取历史价格数据，天数:', days)
+      console.log('开始获取历史价格数据，调价次数:', count)
 
       const res = await Network.request({
         url: '/api/oil-price/history',
         method: 'GET',
-        data: { days }
+        data: { count }
       })
 
       console.log('历史价格数据响应:', res.data)

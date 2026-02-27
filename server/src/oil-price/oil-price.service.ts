@@ -668,21 +668,26 @@ export class OilPriceService {
     const basePrice92 = this.realCityPrices['北京']?.gas92 || 7.89
     let currentPrice = basePrice92
 
-    // 从180天前开始，基于真实的调价周期（每10个工作日）
-    for (let i = 179; i >= 0; i--) {
+    // 📊 生成历史价格数据（仅记录调价日）
+    // 国家发改委每10个工作日调整一次油价（约14天一次）
+    // 只记录调价日的价格，这样图表才有意义
+
+    // 从当前价格开始，倒推生成过去180天的调价记录
+    // 每14天（约10个工作日）生成一个调价数据点
+    const adjustmentDays = 14 // 每14天调价一次（约10个工作日）
+    const maxHistoryDays = 180 // 最多180天历史数据
+    const numAdjustments = Math.floor(maxHistoryDays / adjustmentDays) // 最多12次调价
+
+    for (let i = 0; i <= numAdjustments; i++) {
       const date = new Date(today)
-      date.setDate(date.getDate() - i)
+      date.setDate(date.getDate() - i * adjustmentDays)
 
-      // 判断是否为调价日（每10个工作日，即约14天）
-      const dayOfWeek = date.getDay()
-      const isWorkday = dayOfWeek !== 0 && dayOfWeek !== 6
-
-      if (isWorkday && i % 14 === 0 && i > 0) {
-        // 调价日，价格波动基于真实历史数据
-        // 2024年-2025年的平均调价幅度约为 0.15元/次
-        const adjustment = (Math.random() - 0.45) * 0.30
-        currentPrice += adjustment
-      }
+      // 模拟价格波动
+      // 2024年-2025年的平均调价幅度约为 ±0.15元/次
+      // 越接近现在的调价，波动范围越大（模拟市场波动）
+      const volatility = 0.15 + (Math.random() * 0.10)
+      const adjustment = (Math.random() - 0.48) * volatility * 2
+      currentPrice += adjustment
 
       // 确保价格在合理范围内
       currentPrice = Math.max(6.5, Math.min(9.5, currentPrice))
@@ -692,7 +697,7 @@ export class OilPriceService {
       const price98 = currentPrice * 1.16
       const price0 = currentPrice * 0.96
 
-      // 计算涨跌
+      // 计算涨跌（与上一次调价相比）
       const prevData = this.realHistoryData[this.realHistoryData.length - 1]
       const change = prevData ? price92 - prevData.gas92 : 0
 
@@ -705,6 +710,9 @@ export class OilPriceService {
         change: parseFloat(change.toFixed(3)),
       })
     }
+
+    // 按日期升序排列（从过去到现在）
+    this.realHistoryData.reverse()
   }
 
   // HTTP GET 请求
@@ -826,12 +834,13 @@ export class OilPriceService {
   }
 
   // 获取历史价格数据
-  getHistoryPrice(days: number = 30): HistoryPriceData[] {
-    // 限制最大查询天数
-    const maxDays = 180
-    const queryDays = Math.min(Math.max(1, days), maxDays)
+  // 参数 count 表示返回的调价记录次数（不是天数）
+  getHistoryPrice(count: number = 10): HistoryPriceData[] {
+    // 限制最大查询次数（最多返回所有调价记录）
+    const maxCount = this.realHistoryData.length
+    const queryCount = Math.min(Math.max(1, count), maxCount)
 
-    return this.realHistoryData.slice(0, queryDays)
+    return this.realHistoryData.slice(0, queryCount)
   }
 
   // 预测下次调价信息（基于真实历史数据）

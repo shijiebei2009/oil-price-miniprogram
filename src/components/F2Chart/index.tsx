@@ -1,7 +1,7 @@
 import Taro from '@tarojs/taro'
 import { useEffect, useRef, useState } from 'react'
 import { View, Canvas, Text } from '@tarojs/components'
-import * as F2 from '@antv/f2'
+import { Chart } from '@antv/f2'
 import './index.css'
 
 interface F2ChartProps {
@@ -115,81 +115,75 @@ const F2Chart: React.FC<F2ChartProps> = ({ data, config, height = 300 }) => {
     }
   }
 
-  const renderChart = (canvas: any, ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
+  const renderChart = (canvas: any, _ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     try {
-      // 创建 F2 图表
-      const chartConfig: any = {
+      console.log('F2Chart: 开始渲染图表', { dataLength: data.length, canvasWidth, canvasHeight })
+
+      // F2 v4 正确的初始化方式
+      const chart: any = new Chart({
+        el: canvas,
         width: canvasWidth,
         height: canvasHeight,
         padding: config.padding || 'auto'
-      }
+      })
 
-      console.log('F2Chart: 创建图表实例', chartConfig)
-
-      const chart = new (F2 as any).Chart(chartConfig)
-
-      // 手动设置 canvas 上下文
-      ;(chart as any).container = canvas
-      ;(chart as any).context = ctx
+      console.log('F2Chart: 图表实例创建成功')
 
       // 设置数据
-      ;(chart as any).source(data)
+      chart.source(data)
+
+      console.log('F2Chart: 数据源设置成功')
 
       // 配置坐标轴
       if (config.axis) {
         Object.keys(config.axis).forEach((key) => {
-          ;(chart as any).axis(key, config.axis[key])
+          chart.axis(key, config.axis[key])
         })
       }
 
       // 配置提示框
       if (config.tooltip) {
-        ;(chart as any).tooltip(config.tooltip)
+        chart.tooltip(config.tooltip)
       }
 
       // 配置图例
       if (config.legend) {
-        ;(chart as any).legend(config.legend)
-      }
-
-      // 配置坐标系统
-      if (config.coord) {
-        const coord = (chart as any).coord()
-        if (config.coord.type === 'polar') {
-          coord.transpose()
-        }
+        chart.legend(config.legend)
       }
 
       // 添加几何图形
       if (config.geoms && Array.isArray(config.geoms)) {
         config.geoms.forEach((geomConfig: any) => {
-          const geom = (chart as any)[geomConfig.type]()
+          console.log('F2Chart: 添加几何图形', geomConfig)
+
+          const geom = chart[geomConfig.type]()
             .position(geomConfig.position)
 
+          // F2 v4 使用 .color() 方法设置颜色映射
           if (geomConfig.color) {
             geom.color(geomConfig.color)
           }
 
+          // F2 v4 使用 .shape() 方法设置形状
           if (geomConfig.shape) {
             geom.shape(geomConfig.shape)
           }
 
+          // F2 v4 使用 .size() 方法设置大小
           if (geomConfig.size) {
             geom.size(geomConfig.size)
           }
 
-          if (geomConfig.adjust) {
-            geom.adjust(geomConfig.adjust)
-          }
-
+          // F2 v4 使用 .style() 方法设置样式
           if (geomConfig.style) {
             geom.style(geomConfig.style)
           }
         })
       }
 
+      console.log('F2Chart: 开始调用 render()')
       // 渲染图表
-      ;(chart as any).render()
+      chart.render()
 
       // 保存图表实例
       chartRef.current = chart
@@ -198,6 +192,8 @@ const F2Chart: React.FC<F2ChartProps> = ({ data, config, height = 300 }) => {
       setIsReady(true)
     } catch (error) {
       console.error('F2Chart: 渲染图表失败', error)
+      console.error('错误堆栈:', error.stack)
+      setIsReady(false)
     }
   }
 

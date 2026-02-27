@@ -7,14 +7,5 @@ module.exports = {
     'no-unused-vars': 'off',
     // 忽略 react/jsx-no-undef（在小程序原生组件中）
     'react/jsx-no-undef': 'off',
-  },
-  overrides: [
-    {
-      files: ['src/components/ec-canvas/index.js', 'src/components/WxChart/wx-canvas.js'],
-      rules: {
-        'no-undef': 'off',
-        'no-unused-vars': 'off',
-      }
-    }
-  ]
+  }
 }

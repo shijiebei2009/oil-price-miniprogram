@@ -1,5 +1,4 @@
 import Taro from '@tarojs/taro'
-import { useState } from 'react'
 import { View, Text } from '@tarojs/components'
 import F2Chart from '@/components/F2Chart'
 import './index.css'
@@ -16,7 +15,6 @@ interface PriceChartProps {
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
-  const [isExporting, setIsExporting] = useState(false)
   const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
   // 转换数据格式为 F2 需要的格式

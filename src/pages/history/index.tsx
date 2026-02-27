@@ -127,7 +127,7 @@ const HistoryPage = () => {
       </View>
 
       {/* 主要内容区域 */}
-      <View className="px-4 py-3">
+      <View className="px-4 py-3 mt-4">
         {/* 加载状态 */}
         {loading && (
           <View className="flex items-center justify-center py-12">

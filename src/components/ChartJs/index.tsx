@@ -79,7 +79,7 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
         display: config.legend !== false,
         position: 'top' as const,
         labels: {
-          padding: 15,
+          padding: 10,
           usePointStyle: true
         }
       },
@@ -110,8 +110,8 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
     },
     layout: {
       padding: {
-        top: 20,
-        bottom: 10,
+        top: 10,
+        bottom: 5,
         left: 10,
         right: 10
       }

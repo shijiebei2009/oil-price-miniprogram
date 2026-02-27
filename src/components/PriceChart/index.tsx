@@ -13,7 +13,7 @@ interface PriceChartProps {
   height?: number
 }
 
-const PriceChart: React.FC<PriceChartProps> = ({ data, height = 600 }) => {
+const PriceChart: React.FC<PriceChartProps> = ({ data, height = 750 }) => {
   if (data.length === 0) {
     return (
       <View className="price-chart">
@@ -29,8 +29,8 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 600 }) => {
   return (
     <View className="price-chart">
       {/* 标题 */}
-      <View className="chart-toolbar mb-4">
-        <Text className="block text-lg font-bold text-gray-900">
+      <View className="chart-toolbar mb-2">
+        <Text className="block text-base font-bold text-gray-900">
           价格走势
         </Text>
       </View>
@@ -41,7 +41,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 600 }) => {
       </View>
 
       {/* 提示信息 */}
-      <View className="mt-4">
+      <View className="mt-2">
         <Text className="block text-xs text-gray-400 text-center">
           支持查看各油品价格走势 · 数据每日更新
         </Text>

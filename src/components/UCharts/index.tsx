@@ -33,8 +33,8 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
     // 计算合理的图表尺寸
     // 宽度：减去左右 padding（16px * 2 = 32px）
     const width = screenWidth - 32
-    // 高度：使用屏幕高度的 55%，保证比例协调
-    const height = screenHeight * 0.55
+    // 高度：使用屏幕高度的 70%，让图表更突出
+    const height = screenHeight * 0.7
 
     setCanvasWidth(width)
     setCanvasHeight(height)
@@ -117,7 +117,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [20, 12, 15, 45],
+            padding: [12, 8, 10, 38],
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -127,33 +127,33 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 13,
-              margin: 8,
+              fontSize: 12,
+              margin: 5,
               scrollAlign: 'left'
             },
             yAxis: {
               gridType: 'dash',
               dashLength: 2,
               data: [{ min: 0, max: 10 }],
-              fontSize: 13,
-              margin: 8,
+              fontSize: 12,
+              margin: 5,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
               line: {
                 type: 'curve',
-                width: 3,
+                width: 4,
                 activeType: 'hollow',
-                activeWidth: 4
+                activeWidth: 5
               }
             },
             legend: {
               show: true,
               position: 'top',
-              padding: 8,
-              margin: 4,
-              fontSize: 13,
-              lineHeight: 16,
+              padding: 5,
+              margin: 2,
+              fontSize: 12,
+              lineHeight: 14,
               float: 'center'
             },
             tooltip: {

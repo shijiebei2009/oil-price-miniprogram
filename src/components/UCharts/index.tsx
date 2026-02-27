@@ -14,7 +14,7 @@ interface UChartsProps {
   height?: number
 }
 
-const UCharts: React.FC<UChartsProps> = ({ data, height = 450 }) => {
+const UCharts: React.FC<UChartsProps> = ({ data, height = 600 }) => {
   const [canvasId] = useState(`ucharts-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const [canvasWidth, setCanvasWidth] = useState(0)
   const uChartsRef = useRef<any>(null)
@@ -50,6 +50,9 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 450 }) => {
   }, [data, canvasId])
 
   const initChart = (width: number, height: number) => {
+    // 获取实际屏幕宽度，不减去padding
+    const screenWidth = Taro.getSystemInfoSync().windowWidth
+    const chartWidth = screenWidth
     const query = Taro.createSelectorQuery()
     query.select(`#${canvasId}`)
       .fields({ node: true, size: true })

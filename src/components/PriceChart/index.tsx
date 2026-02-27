@@ -13,7 +13,7 @@ interface PriceChartProps {
   height?: number
 }
 
-const PriceChart: React.FC<PriceChartProps> = ({ data, height = 450 }) => {
+const PriceChart: React.FC<PriceChartProps> = ({ data, height = 600 }) => {
   if (data.length === 0) {
     return (
       <View className="price-chart">

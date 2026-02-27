@@ -33,8 +33,7 @@
     "ios >= 8"
   ],
   "dependencies": {
-    "chart.js": "^4.4.1",
-    "react-chartjs-2": "^5.2.0",
+    "@antv/f2": "^5.14.0",
     "@babel/runtime": "^7.24.4",
     "@tarojs/components": "4.1.9",
     "@tarojs/helper": "4.1.9",
@@ -46,6 +45,7 @@
     "@tarojs/shared": "4.1.9",
     "@tarojs/taro": "4.1.9",
     "dotenv": "^17.2.3",
+    "f-engine-taro-react": "^1.0.3",
     "lucide-react": "^0.511.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",

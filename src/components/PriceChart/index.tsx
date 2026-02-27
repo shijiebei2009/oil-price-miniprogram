@@ -1,4 +1,3 @@
-import Taro from '@tarojs/taro'
 import { View, Text } from '@tarojs/components'
 import F2Chart from '@/components/F2Chart'
 import './index.css'
@@ -15,8 +14,6 @@ interface PriceChartProps {
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
-  const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
-
   // 转换数据格式为 F2 需要的格式
   const formatData = (chartData: typeof data) => {
     const result: any[] = []
@@ -90,32 +87,18 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         </Text>
       </View>
 
-      {/* 图表区域 */}
+      {/* 图表区域 - H5 和小程序端都使用 F2Chart */}
       <View className="chart-container">
-        {isWeapp ? (
-          // 微信小程序端：使用 F2 图表
-          <F2Chart
-            data={chartData}
-            config={chartConfig}
-            height={height}
-          />
-        ) : (
-          // H5 端：显示提示（H5 端暂时未实现）
-          <View className="flex flex-col items-center justify-center h-full bg-gray-50 rounded-xl" style={{ height: `${height}px` }}>
-            <Text className="block text-6xl mb-4">📊</Text>
-            <Text className="block text-base font-semibold text-gray-700 mb-2">
-              图表功能已移至微信小程序
-            </Text>
-            <Text className="block text-sm text-gray-500 text-center px-8">
-              请在微信小程序中查看图表，或使用下方列表查看详细价格
-            </Text>
-          </View>
-        )}
+        <F2Chart
+          data={chartData}
+          config={chartConfig}
+          height={height}
+        />
       </View>
 
       {/* 提示信息 */}
       <Text className="block text-xs text-gray-400 text-center mt-2">
-        {isWeapp ? '支持查看各油品价格走势 · 数据每日更新' : '数据已更新，可在下方列表查看详细价格'}
+        支持查看各油品价格走势 · 数据每日更新
       </Text>
     </View>
   )

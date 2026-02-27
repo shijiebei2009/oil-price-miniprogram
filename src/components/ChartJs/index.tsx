@@ -170,37 +170,25 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
                   if (attr === 'width') return canvas.width.toString()
                   if (attr === 'height') return canvas.height.toString()
                   return null
+                },
+                // 添加 Chart.js 需要的其他方法
+                getContext: (type: string) => {
+                  if (type === '2d') return ctx
+                  return null
                 }
               }
 
-              // CRITICAL: 不直接修改 context.canvas，而是使用 Object.defineProperty
-              // 避免修改只读属性
-              try {
-                Object.defineProperty(ctx, 'canvas', {
-                  value: canvasWrapper,
-                  writable: false,
-                  configurable: false
-                })
-              } catch (e) {
-                // 如果 Object.defineProperty 失败，尝试直接赋值
-                ;(ctx as any).canvas = canvasWrapper
-              }
+              // CRITICAL: Chart.js 可以接受 canvas 对象或 context
+              // 尝试传入 canvas 包装对象而不是 context
+              console.log('ChartJs: 创建 Chart.js 实例（使用 canvas 对象）')
 
-              // CRITICAL: 小程序 Canvas 2D 不需要手动设置 width/height 和 scale
-              // 这些已经在创建 Canvas 时通过 DPR 自动处理
-              // 直接使用 Canvas 的原始尺寸
-
-              // 创建图表
-              console.log('ChartJs: 创建 Chart.js 实例')
-
-              chartRef.current = new ChartJS(ctx, {
+              chartRef.current = new ChartJS(canvasWrapper as any, {
                 type: 'line',
                 data: chartData,
                 options: {
                   ...options,
                   responsive: true,
                   maintainAspectRatio: false,
-                  // 明确指定画布尺寸，避免 Chart.js 尝试读取 getAttribute
                   animation: {
                     duration: 0
                   }

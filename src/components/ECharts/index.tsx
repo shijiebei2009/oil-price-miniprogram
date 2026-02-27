@@ -1,5 +1,5 @@
-import { View, Canvas, Text } from '@tarojs/components'
-import { useEffect, useRef } from 'react'
+import { View, Canvas } from '@tarojs/components'
+import { useEffect, useRef, useState } from 'react'
 import Taro from '@tarojs/taro'
 import * as echarts from 'echarts/core'
 
@@ -24,7 +24,7 @@ echarts.use([
   TooltipComponent,
   GridComponent,
   LegendComponent,
-  CanvasRenderer  // 注册 Canvas 渲染器
+  CanvasRenderer
 ])
 
 interface EChartsProps {
@@ -41,7 +41,7 @@ interface EChartsProps {
 
 const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
   const chartRef = useRef<any>(null)
-  const canvasId = `echarts-canvas-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+  const [canvasId] = useState(`echarts-canvas-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
   // 转换数据格式为 ECharts 格式
@@ -138,44 +138,6 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
     series
   }
 
-  // 创建兼容的 Canvas 对象（小程序端）
-  const createCompatibleCanvas = (canvasNode: any, width: number, height: number, dpr: number) => {
-    // 设置小程序 Canvas 尺寸
-    canvasNode.width = width * dpr
-    canvasNode.height = height * dpr
-
-    // 创建兼容层，添加 ECharts 需要的 DOM 方法
-    const compatibleCanvas: any = {
-      node: canvasNode,
-      width: width,
-      height: height,
-      style: {
-        width: `${width}px`,
-        height: `${height}px`
-      },
-      // ECharts 需要的 DOM 方法
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => {},
-      getBoundingClientRect: () => ({
-        width: width,
-        height: height,
-        top: 0,
-        left: 0,
-        right: width,
-        bottom: height
-      }),
-      getContext: (contextType: string) => {
-        return canvasNode.getContext(contextType)
-      },
-      // 其他 ECharts 可能需要的属性
-      tagName: 'CANVAS',
-      id: canvasId
-    }
-
-    return compatibleCanvas
-  }
-
   useEffect(() => {
     if (!data || data.length === 0) {
       return
@@ -196,31 +158,37 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
         }
 
         if (isWeapp) {
-          // 小程序端
-          Taro.createSelectorQuery()
-            .select(`#${canvasId}`)
+          // 小程序端 - 使用 Canvas 2D
+          const query = Taro.createSelectorQuery()
+          query.select(`#${canvasId}`)
             .fields({ node: true, size: true })
             .exec((res: any) => {
               console.log('ECharts: Canvas 查询结果', res)
 
-              if (res && res[0] && res[0].node) {
-                const canvasNode = res[0].node
+              if (res && res[0]) {
+                const { node: canvas, width, height } = res[0]
+
+                if (!canvas) {
+                  console.error('ECharts: Canvas 节点不存在')
+                  return
+                }
+
                 const dpr = Taro.getSystemInfoSync().pixelRatio || 1
 
-                // 创建兼容的 Canvas 对象
-                const compatibleCanvas = createCompatibleCanvas(
-                  canvasNode,
-                  res[0].width,
-                  res[0].height,
-                  dpr
-                )
+                // 设置 Canvas 实际像素尺寸
+                canvas.width = width * dpr
+                canvas.height = height * dpr
 
-                // ECharts 小程序端初始化
-                chartRef.current = echarts.init(compatibleCanvas, null, {
-                  renderer: 'canvas',
-                  width: res[0].width,
-                  height: res[0].height,
-                  devicePixelRatio: dpr
+                // 创建 2D context
+                const ctx = canvas.getContext('2d')
+                ctx.scale(dpr, dpr)
+
+                // 使用 echarts-for-weixin 的方式初始化
+                chartRef.current = echarts.init(canvas, null, {
+                  width: width,
+                  height: height,
+                  devicePixelRatio: dpr,
+                  renderer: 'canvas'
                 })
 
                 chartRef.current.setOption(option)
@@ -241,58 +209,39 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
       }
     }
 
-    // 延迟初始化
-    const timer = setTimeout(initChart, 300)
+    // 延迟初始化，确保 DOM 已渲染
+    const timer = setTimeout(initChart, 100)
 
     return () => {
       clearTimeout(timer)
+      // 清理图表实例
       if (chartRef.current) {
         chartRef.current.dispose()
         chartRef.current = null
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, canvasId, isWeapp])
 
-  if (!data || data.length === 0) {
-    return (
-      <View className="w-full flex items-center justify-center" style={{ height: `${height}px` }}>
-        <Text className="block text-sm text-gray-500">暂无数据</Text>
-      </View>
-    )
-  }
-
-  console.log('ECharts: 渲染 Canvas', { canvasId, isWeapp, height })
-
-  if (isWeapp) {
-    // 小程序端
-    return (
-      <View
-        className="w-full"
-        style={{ height: `${height}px`, position: 'relative' }}
-      >
+  return (
+    <View className="echarts-container" style={{ width: '100%', height: `${height}px` }}>
+      {isWeapp ? (
+        // 小程序端 - 使用 Canvas 2D
+        <Canvas
+          id={canvasId}
+          type="2d"
+          canvasId={canvasId}
+          style={{ width: '100%', height: `${height}px` }}
+        />
+      ) : (
+        // H5 端 - 使用原生 Canvas
         <Canvas
           id={canvasId}
           canvasId={canvasId}
-          type="2d"
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: '100%', height: `${height}px` }}
         />
-      </View>
-    )
-  } else {
-    // H5 端
-    return (
-      <View
-        className="w-full"
-        style={{ height: `${height}px`, position: 'relative' }}
-      >
-        <canvas
-          id={canvasId}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </View>
-    )
-  }
+      )}
+    </View>
+  )
 }
 
 export default ECharts

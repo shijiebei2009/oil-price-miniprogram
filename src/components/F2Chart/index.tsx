@@ -115,19 +115,26 @@ const F2Chart: React.FC<F2ChartProps> = ({ data, config, height = 300 }) => {
     }
   }
 
-  const renderChart = (canvas: any, _ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
+  const renderChart = (canvas: any, ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     try {
       console.log('F2Chart: 开始渲染图表', { dataLength: data.length, canvasWidth, canvasHeight })
 
-      // F2 v4 正确的初始化方式
-      const chart: any = new Chart({
+      // 获取 pixelRatio（兼容小程序和 H5）
+      const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+      const pixelRatio = isWeapp
+        ? (Taro.getSystemInfoSync().pixelRatio || 1)
+        : (window.devicePixelRatio || 1)
+
+      // F2 v4 正确的初始化方式 - 使用 el 参数
+      const chart = new Chart({
         el: canvas,
         width: canvasWidth,
         height: canvasHeight,
-        padding: config.padding || 'auto'
+        padding: config.padding || 'auto',
+        pixelRatio
       })
 
-      console.log('F2Chart: 图表实例创建成功')
+      console.log('F2Chart: 图表实例创建成功', { pixelRatio })
 
       // 设置数据
       chart.source(data)

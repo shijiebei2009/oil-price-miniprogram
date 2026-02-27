@@ -1,69 +1,60 @@
 import { View, Text } from '@tarojs/components'
-import F2Chart from '@/components/F2Chart'
+import ChartJs from '@/components/ChartJs'
 import './index.css'
 
 interface PriceChartProps {
   data: Array<{
     date: string
-    price92: number
-    price95: number
-    price98: number
-    priceDiesel: number
+    gas92: number
+    gas95: number
+    gas98: number
+    diesel0: number
   }>
   height?: number
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
-  // 转换数据格式为 F2 需要的格式
-  const formatData = (chartData: typeof data) => {
-    const result: any[] = []
-    chartData.forEach((item) => {
-      result.push({ date: item.date, type: '92#汽油', value: item.price92 })
-      result.push({ date: item.date, type: '95#汽油', value: item.price95 })
-      result.push({ date: item.date, type: '98#汽油', value: item.price98 })
-      result.push({ date: item.date, type: '0#柴油', value: item.priceDiesel })
-    })
-    return result
-  }
-
-  const chartData = formatData(data)
-
-  // F2 图表配置
+  // Chart.js 图表配置
   const chartConfig = {
     padding: ['auto', 'auto', '60', 'auto'],
-    tooltip: {
-      showCrosshairs: true,
-      showItemMarker: true,
-      onShow: (ev: any) => {
-        const { items } = ev
-        items[0].name = items[0].title
-        items[0].value = items[0].value
-      }
-    },
-    legend: {
-      position: 'bottom',
-      align: 'center',
-      itemGap: 15,
-      itemWidth: 10,
-      itemHeight: 10
-    },
-    axis: {
-      date: {
-        range: [0, 1]
-      }
-    },
     geoms: [
       {
         type: 'line',
-        position: 'date*value',
-        color: 'type',
+        position: '*gas92',
+        color: '#1890ff',
         shape: 'smooth',
-        size: 2,
-        style: {
-          lineWidth: 2
-        }
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*gas95',
+        color: '#52c41a',
+        shape: 'smooth',
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*gas98',
+        color: '#faad14',
+        shape: 'smooth',
+        size: 2
+      },
+      {
+        type: 'line',
+        position: '*diesel0',
+        color: '#8c8c8c',
+        shape: 'smooth',
+        size: 2
       }
-    ]
+    ],
+    dataMapping: {
+      gas92: '92#汽油',
+      gas95: '95#汽油',
+      gas98: '98#汽油',
+      diesel0: '0#柴油'
+    },
+    legend: true,
+    tooltip: true
   }
 
   if (data.length === 0) {
@@ -87,10 +78,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
         </Text>
       </View>
 
-      {/* 图表区域 - H5 和小程序端都使用 F2Chart */}
+      {/* 图表区域 */}
       <View className="chart-container">
-        <F2Chart
-          data={chartData}
+        <ChartJs
+          data={data}
           config={chartConfig}
           height={height}
         />

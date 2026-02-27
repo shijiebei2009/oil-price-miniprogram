@@ -138,6 +138,44 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
     series
   }
 
+  // 创建兼容的 Canvas 对象（小程序端）
+  const createCompatibleCanvas = (canvasNode: any, width: number, height: number, dpr: number) => {
+    // 设置小程序 Canvas 尺寸
+    canvasNode.width = width * dpr
+    canvasNode.height = height * dpr
+
+    // 创建兼容层，添加 ECharts 需要的 DOM 方法
+    const compatibleCanvas: any = {
+      node: canvasNode,
+      width: width,
+      height: height,
+      style: {
+        width: `${width}px`,
+        height: `${height}px`
+      },
+      // ECharts 需要的 DOM 方法
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => {},
+      getBoundingClientRect: () => ({
+        width: width,
+        height: height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height
+      }),
+      getContext: (contextType: string) => {
+        return canvasNode.getContext(contextType)
+      },
+      // 其他 ECharts 可能需要的属性
+      tagName: 'CANVAS',
+      id: canvasId
+    }
+
+    return compatibleCanvas
+  }
+
   useEffect(() => {
     if (!data || data.length === 0) {
       return
@@ -166,15 +204,19 @@ const ECharts: React.FC<EChartsProps> = ({ data, height = 300 }) => {
               console.log('ECharts: Canvas 查询结果', res)
 
               if (res && res[0] && res[0].node) {
-                const canvas = res[0].node
-
-                // 小程序需要手动设置 canvas 尺寸
+                const canvasNode = res[0].node
                 const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-                canvas.width = res[0].width * dpr
-                canvas.height = res[0].height * dpr
 
-                // ECharts 5.x 小程序端初始化
-                chartRef.current = echarts.init(canvas, null, {
+                // 创建兼容的 Canvas 对象
+                const compatibleCanvas = createCompatibleCanvas(
+                  canvasNode,
+                  res[0].width,
+                  res[0].height,
+                  dpr
+                )
+
+                // ECharts 小程序端初始化
+                chartRef.current = echarts.init(compatibleCanvas, null, {
                   renderer: 'canvas',
                   width: res[0].width,
                   height: res[0].height,

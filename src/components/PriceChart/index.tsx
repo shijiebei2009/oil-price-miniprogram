@@ -79,7 +79,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
       </View>
 
       {/* 图表区域 */}
-      <View className="chart-container">
+      <View className="chart-container" style={{ height: `${height}px` }}>
         <ChartJs
           data={data}
           config={chartConfig}
@@ -88,9 +88,11 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
       </View>
 
       {/* 提示信息 */}
-      <Text className="block text-xs text-gray-400 text-center mt-2">
-        支持查看各油品价格走势 · 数据每日更新
-      </Text>
+      <View className="mt-3">
+        <Text className="block text-xs text-gray-400 text-center">
+          支持查看各油品价格走势 · 数据每日更新
+        </Text>
+      </View>
     </View>
   )
 }

@@ -93,14 +93,26 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
 
   // 初始化图表
   useEffect(() => {
-    if (!data || data.length === 0) return
+    if (!data || data.length === 0) {
+      console.log('ChartJs: 数据为空，跳过初始化', { data, config })
+      return
+    }
+
+    console.log('ChartJs: 开始初始化图表', {
+      dataLength: data.length,
+      canvasId: canvasId.current,
+      isWeapp: Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+    })
 
     const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
     const initChart = () => {
       try {
+        console.log('ChartJs: 执行 initChart')
+
         // 销毁旧图表
         if (chartRef.current) {
+          console.log('ChartJs: 销毁旧图表')
           chartRef.current.destroy()
           chartRef.current = null
         }
@@ -109,13 +121,22 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
 
         if (isWeapp) {
           // 小程序端使用 Taro Canvas 2D
+          console.log('ChartJs: 小程序端初始化')
+
           const query = Taro.createSelectorQuery()
           query.select(`#${canvasId.current}`)
             .fields({ node: true, size: true })
             .exec((res: any) => {
+              console.log('ChartJs: Canvas 查询结果', res)
+
               if (res && res[0]) {
                 const canvas = res[0].node
                 ctx = canvas.getContext('2d')
+
+                console.log('ChartJs: 获取 Canvas 上下文成功', {
+                  width: res[0].width,
+                  height: res[0].height
+                })
 
                 // 设置 Canvas 尺寸
                 const dpr = Taro.getSystemInfoSync().pixelRatio || 1
@@ -124,6 +145,11 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
                 ctx.scale(dpr, dpr)
 
                 // 创建图表
+                console.log('ChartJs: 创建 Chart.js 实例', {
+                  labels: chartData.labels,
+                  datasetsCount: chartData.datasets.length
+                })
+
                 chartRef.current = new ChartJS(ctx, {
                   type: 'line',
                   data: chartData,
@@ -133,10 +159,16 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
                     maintainAspectRatio: false
                   }
                 })
+
+                console.log('ChartJs: 图表创建成功')
+              } else {
+                console.error('ChartJs: Canvas 查询失败', res)
               }
             })
         } else {
           // H5 端使用标准 Canvas
+          console.log('ChartJs: H5 端初始化')
+
           const canvasEl = document.getElementById(canvasId.current) as HTMLCanvasElement
           if (canvasEl) {
             ctx = canvasEl.getContext('2d')
@@ -159,7 +191,7 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
     }
 
     // 延迟初始化确保 DOM 已渲染
-    const timer = setTimeout(initChart, 100)
+    const timer = setTimeout(initChart, 300) // 增加延迟到 300ms
 
     return () => {
       clearTimeout(timer)
@@ -183,6 +215,7 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
 
   if (isWeapp) {
     // 小程序端使用 Taro Canvas 2D
+    console.log('ChartJs: 渲染小程序 Canvas', { canvasId: canvasId.current, height })
     return (
       <View
         className="w-full"
@@ -190,6 +223,7 @@ const ChartJs: React.FC<ChartJsProps> = ({ data, config, height = 300 }) => {
       >
         <Canvas
           id={canvasId.current}
+          canvasId={canvasId.current}
           type="2d"
           style={{ width: '100%', height: '100%' }}
         />

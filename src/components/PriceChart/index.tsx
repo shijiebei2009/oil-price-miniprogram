@@ -80,6 +80,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height = 300 }) => {
 
       {/* 图表区域 */}
       <View className="chart-container">
+        {console.log('PriceChart: 传递给 ChartJs 的数据', { dataLength: data.length, sampleData: data[0] })}
         <ChartJs
           data={data}
           config={chartConfig}

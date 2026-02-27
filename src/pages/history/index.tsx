@@ -84,21 +84,21 @@ const HistoryPage = () => {
   return (
     <View className="w-full min-h-screen bg-white">
       {/* 页面标题 */}
-      <View className="bg-white px-4 py-1.5 border-b border-gray-100">
-        <Text className="block text-sm font-bold text-gray-900">历史价格</Text>
+      <View className="bg-white px-4 py-2 border-b border-gray-100">
+        <Text className="block text-base font-bold text-gray-900">历史价格</Text>
       </View>
 
       {/* 时间筛选器 */}
-      <View className="bg-white px-3 py-1.5">
-        <View className="flex flex-row gap-1.5">
+      <View className="bg-white px-4 py-3">
+        <View className="flex flex-row gap-2">
           {timeRanges.map((range, index) => (
             <View
               key={index}
-              className={`flex-1 rounded px-2 py-1 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-100'}`}
+              className={`flex-1 rounded-lg px-3 py-1.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-100'}`}
               onClick={() => handleRangeChange(range.value)}
             >
               <Text
-                className={`text-xs text-center ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
+                className={`text-sm text-center ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
               >
                 {range.label}
               </Text>
@@ -108,7 +108,7 @@ const HistoryPage = () => {
       </View>
 
       {/* 走势图区域 */}
-      <View className="px-2 py-1">
+      <View className="px-4 py-3">
         {historyData.length > 0 && (
           <>
             {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
@@ -120,14 +120,13 @@ const HistoryPage = () => {
                 gas98: item.gas98,
                 diesel0: item.diesel0
               }))}
-              height={750}
             />
           </>
         )}
       </View>
 
       {/* 主要内容区域 */}
-      <View className="px-3 py-2">
+      <View className="px-4 py-3">
         {/* 加载状态 */}
         {loading && (
           <View className="flex items-center justify-center py-12">

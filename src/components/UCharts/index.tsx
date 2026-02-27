@@ -14,9 +14,10 @@ interface UChartsProps {
   height?: number
 }
 
-const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
+const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
   const [canvasId] = useState(`ucharts-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const [canvasWidth, setCanvasWidth] = useState(0)
+  const [canvasHeight, setCanvasHeight] = useState(0)
   const uChartsRef = useRef<any>(null)
 
   useEffect(() => {
@@ -24,16 +25,28 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
       return
     }
 
-    // 获取屏幕宽度
-    const screenWidth = Taro.getSystemInfoSync().windowWidth
-    // 获取父容器宽度（假设占满屏幕宽度）
-    const width = screenWidth - 32 // 减去左右 padding
+    // 获取屏幕信息
+    const systemInfo = Taro.getSystemInfoSync()
+    const screenWidth = systemInfo.windowWidth
+    const screenHeight = systemInfo.windowHeight
+
+    // 计算合理的图表尺寸
+    // 宽度：减去左右 padding（16px * 2 = 32px）
+    const width = screenWidth - 32
+    // 高度：使用屏幕高度的 55%，保证比例协调
+    const height = screenHeight * 0.55
+
     setCanvasWidth(width)
+    setCanvasHeight(height)
 
     console.log('UCharts: 初始化图表', {
       dataLength: data.length,
       canvasId,
-      width
+      screenWidth,
+      screenHeight,
+      chartWidth: width,
+      chartHeight: height,
+      aspectRatio: width / height
     })
 
     // 延迟初始化，确保 Canvas 渲染完成
@@ -50,9 +63,6 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
   }, [data, canvasId])
 
   const initChart = (width: number, height: number) => {
-    // 获取实际屏幕宽度，不减去padding
-    const screenWidth = Taro.getSystemInfoSync().windowWidth
-    const chartWidth = screenWidth
     const query = Taro.createSelectorQuery()
     query.select(`#${canvasId}`)
       .fields({ node: true, size: true })
@@ -107,7 +117,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [15, 10, 15, 40],
+            padding: [20, 12, 15, 45],
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -117,7 +127,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 14,
+              fontSize: 13,
               margin: 8,
               scrollAlign: 'left'
             },
@@ -125,25 +135,25 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
               gridType: 'dash',
               dashLength: 2,
               data: [{ min: 0, max: 10 }],
-              fontSize: 14,
+              fontSize: 13,
               margin: 8,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
               line: {
                 type: 'curve',
-                width: 4,
+                width: 3,
                 activeType: 'hollow',
-                activeWidth: 5
+                activeWidth: 4
               }
             },
             legend: {
               show: true,
               position: 'top',
-              padding: 5,
-              margin: 3,
+              padding: 8,
+              margin: 4,
               fontSize: 13,
-              lineHeight: 15,
+              lineHeight: 16,
               float: 'center'
             },
             tooltip: {
@@ -163,7 +173,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
             canvasId: canvasId,
             context: ctx,
             type: option.type,
-            fontSize: 14,
+            fontSize: 13,
             legend: option.legend,
             background: option.background,
             pixelRatio: dpr,
@@ -184,12 +194,12 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 750 }) => {
   }
 
   return (
-    <View style={{ width: '100%', height: `${height}px` }}>
+    <View style={{ width: '100%', height: `${canvasHeight}px` }}>
       <Canvas
         id={canvasId}
         canvasId={canvasId}
         type="2d"
-        style={{ width: `${canvasWidth}px`, height: `${height}px` }}
+        style={{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }}
       />
     </View>
   )

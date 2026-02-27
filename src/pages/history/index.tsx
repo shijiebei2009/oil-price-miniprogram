@@ -120,7 +120,7 @@ const HistoryPage = () => {
                 gas98: item.gas98,
                 diesel0: item.diesel0
               }))}
-              height={400}
+              height={450}
             />
           </>
         )}

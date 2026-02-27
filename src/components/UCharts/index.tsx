@@ -14,7 +14,7 @@ interface UChartsProps {
   height?: number
 }
 
-const UCharts: React.FC<UChartsProps> = ({ data, height = 300 }) => {
+const UCharts: React.FC<UChartsProps> = ({ data, height = 450 }) => {
   const [canvasId] = useState(`ucharts-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const [canvasWidth, setCanvasWidth] = useState(0)
   const uChartsRef = useRef<any>(null)
@@ -104,7 +104,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 300 }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [15, 15, 0, 15],
+            padding: [25, 15, 20, 50],
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -113,26 +113,35 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 300 }) => {
             xAxis: {
               disableGrid: true,
               itemCount: data.length,
-              labelCount: data.length
+              labelCount: data.length,
+              fontSize: 12,
+              margin: 10,
+              scrollAlign: 'left'
             },
             yAxis: {
               gridType: 'dash',
               dashLength: 2,
-              data: [{ min: 0, max: 10 }]
+              data: [{ min: 0, max: 10 }],
+              fontSize: 12,
+              margin: 10,
+              format: (val: number) => val.toFixed(2)
             },
             extra: {
               line: {
                 type: 'curve',
-                width: 2,
-                activeType: 'hollow'
+                width: 3,
+                activeType: 'hollow',
+                activeWidth: 3
               }
             },
             legend: {
               show: true,
               position: 'top',
-              padding: 5,
-              margin: 0,
-              fontSize: 11
+              padding: 10,
+              margin: 5,
+              fontSize: 12,
+              lineHeight: 14,
+              float: 'left'
             },
             tooltip: {
               show: true,
@@ -151,7 +160,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height = 300 }) => {
             canvasId: canvasId,
             context: ctx,
             type: option.type,
-            fontSize: 11,
+            fontSize: 12,
             legend: option.legend,
             background: option.background,
             pixelRatio: dpr,

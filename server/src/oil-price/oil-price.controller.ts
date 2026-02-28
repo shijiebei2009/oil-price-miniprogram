@@ -137,4 +137,23 @@ export class OilPriceController {
       data
     }
   }
+
+  // 获取每日价格历史（按天数查询）
+  @Get('daily-history')
+  getDailyHistoryPrice(@Query('days') days?: string) {
+    console.log('收到获取每日价格历史请求，天数:', days)
+    const data = this.oilPriceService.getDailyHistoryPrice(days ? parseInt(days) : 30)
+
+    console.log('返回响应:', {
+      code: 200,
+      msg: 'success',
+      data
+    })
+
+    return {
+      code: 200,
+      msg: 'success',
+      data
+    }
+  }
 }

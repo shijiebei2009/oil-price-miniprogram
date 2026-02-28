@@ -461,6 +461,7 @@ const CITIES = [
 export class OilPriceService implements OnModuleInit {
   private readonly logger = new Logger(OilPriceService.name)
   private readonly historyFilePath = path.join(__dirname, '../../data/oil-price-history.json')
+  private readonly dailyHistoryFilePath = path.join(__dirname, '../../data/daily-oil-price-history.json')
 
   // 全国均价（基准）
   private nationalAverage = {
@@ -479,6 +480,9 @@ export class OilPriceService implements OnModuleInit {
   // 真实历史价格数据（从文件读取）
   private realHistoryData: HistoryPriceData[] = []
 
+  // 每日价格历史数据（从文件读取，保留最近60天）
+  private dailyHistoryData: HistoryPriceData[] = []
+
   // 数据缓存
   private dataCache: {
     lastUpdate: Date
@@ -493,7 +497,9 @@ export class OilPriceService implements OnModuleInit {
   // 模块初始化时加载历史数据
   onModuleInit() {
     this.loadHistoryData()
+    this.loadDailyHistoryData()
     this.fetchRealOilPrices()
+    this.recordDailyPrice() // 记录今日价格
     this.logger.log('油价服务初始化完成')
   }
 
@@ -533,6 +539,97 @@ export class OilPriceService implements OnModuleInit {
     } catch (error) {
       this.logger.error('保存历史数据失败:', error.message)
     }
+  }
+
+  // 从文件加载每日价格历史数据
+  private loadDailyHistoryData() {
+    try {
+      if (fs.existsSync(this.dailyHistoryFilePath)) {
+        const data = fs.readFileSync(this.dailyHistoryFilePath, 'utf-8')
+        this.dailyHistoryData = JSON.parse(data)
+        this.logger.log(`✅ 已从文件加载 ${this.dailyHistoryData.length} 条每日价格记录`)
+      } else {
+        this.logger.warn('⚠️ 每日价格历史文件不存在，将创建新文件')
+        this.saveDailyHistoryData()
+      }
+    } catch (error) {
+      this.logger.error('加载每日价格历史失败:', error.message)
+      this.dailyHistoryData = []
+    }
+  }
+
+  // 保存每日价格历史到文件
+  private saveDailyHistoryData() {
+    try {
+      // 确保目录存在
+      const dir = path.dirname(this.dailyHistoryFilePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      // 只保留最近60天的数据
+      const maxDays = 60
+      const today = new Date()
+      const sixtyDaysAgo = new Date(today.getTime() - maxDays * 24 * 60 * 60 * 1000)
+
+      this.dailyHistoryData = this.dailyHistoryData.filter(record => {
+        const recordDate = new Date(record.date)
+        return recordDate >= sixtyDaysAgo
+      })
+
+      fs.writeFileSync(
+        this.dailyHistoryFilePath,
+        JSON.stringify(this.dailyHistoryData, null, 2),
+        'utf-8'
+      )
+      this.logger.log(`✅ 每日价格历史已保存到文件（保留最近${maxDays}天）`)
+    } catch (error) {
+      this.logger.error('保存每日价格历史失败:', error.message)
+    }
+  }
+
+  // 记录每日价格
+  private recordDailyPrice() {
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+
+    // 检查今天是否已经记录过
+    const existingRecord = this.dailyHistoryData.find(record => record.date === todayStr)
+
+    if (existingRecord) {
+      this.logger.log(`✅ 今日价格已记录，跳过: ${todayStr}`)
+      return
+    }
+
+    // 获取当前价格（以北京为例）
+    const cityPrice = this.realCityPrices['北京'] || this.realCityPrices['北京'] || {
+      gas92: 7.89,
+      gas95: 8.37,
+      gas98: 9.13,
+      diesel0: 7.56
+    }
+
+    // 计算与昨日的价格变化
+    const change = this.dailyHistoryData.length > 0
+      ? cityPrice.gas92 - this.dailyHistoryData[0].gas92
+      : 0
+
+    const newRecord: HistoryPriceData = {
+      date: todayStr,
+      gas92: cityPrice.gas92,
+      gas95: cityPrice.gas95,
+      gas98: cityPrice.gas98,
+      diesel0: cityPrice.diesel0,
+      change: change
+    }
+
+    // 添加到最前面
+    this.dailyHistoryData.unshift(newRecord)
+
+    // 保存到文件
+    this.saveDailyHistoryData()
+
+    this.logger.log(`✅ 已记录今日价格: ${todayStr}, 92#=${cityPrice.gas92.toFixed(2)}`)
   }
 
   // 检查数据是否需要更新
@@ -1158,6 +1255,16 @@ export class OilPriceService implements OnModuleInit {
     const queryCount = Math.min(Math.max(1, count), maxCount)
 
     return this.realHistoryData.slice(0, queryCount)
+  }
+
+  // 获取每日价格历史数据
+  // 参数 days 表示返回的天数（默认30天）
+  getDailyHistoryPrice(days: number = 30): HistoryPriceData[] {
+    // 限制最大查询天数（最多返回所有每日记录）
+    const maxDays = this.dailyHistoryData.length
+    const queryDays = Math.min(Math.max(1, days), maxDays)
+
+    return this.dailyHistoryData.slice(0, queryDays)
   }
 
   // 预测下次调价信息（基于真实历史数据）

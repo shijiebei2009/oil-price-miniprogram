@@ -75,7 +75,7 @@ const IndexPage = () => {
   const loadCityList = async () => {
     try {
       const res = await Network.request({
-        url: '/api/oil-price/provinces/compare',
+        url: '/api/oil-price/provinces',
         method: 'GET'
       })
 

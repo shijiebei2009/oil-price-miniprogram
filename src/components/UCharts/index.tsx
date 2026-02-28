@@ -148,7 +148,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [2, 0, 2, 20],  // 极小化 padding：顶2，右0，底2，左20
+            padding: [8, 0, 8, 45],  // padding：顶8，右0，底8，左45（适应14px字体）
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -158,15 +158,15 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 9,
-              margin: 1,
-              scrollAlign: 'left'
+              fontSize: 14,  // 与价格记录字体大小一致
+              margin: 8,
+              scrollAlign: 'center'  // 改为居中，减少右侧留白
             },
             yAxis: {
               disableGrid: true,  // 隐藏网格线
               data: [{ min: yMin, max: yMax }],
-              fontSize: 9,
-              margin: 1,
+              fontSize: 14,  // 与价格记录字体大小一致
+              margin: 8,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
@@ -197,7 +197,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             context: ctx,
             type: option.type,
-            fontSize: 10,  // 统一字体大小
+            fontSize: 14,  // 统一字体大小，与价格记录保持一致
             legend: option.legend,
             background: option.background,
             pixelRatio: dpr,

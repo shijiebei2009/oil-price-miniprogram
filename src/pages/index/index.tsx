@@ -44,24 +44,61 @@ const IndexPage = () => {
   const [showCityPicker, setShowCityPicker] = useState(false)
   const [cityList, setCityList] = useState<CityItem[]>([])
 
-  // 获取用户位置并转换为所在省份
-  const getCurrentProvince = async (): Promise<string> => {
+  // 获取用户位置并转换为所在城市
+  const getCurrentCity = async (): Promise<string> => {
+    const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+
+    // H5 端提示用户需要手动选择城市
+    if (!isWeapp) {
+      console.log('H5 端位置获取受限，请手动选择城市')
+      Taro.showToast({
+        title: '请手动选择城市',
+        icon: 'none',
+        duration: 2000
+      })
+      return '上海市'
+    }
+
     try {
       console.log('开始获取用户位置...')
       const location = await Taro.getLocation({
-        type: 'wgs84'
+        type: 'gcj02' // 使用国测局坐标系，与腾讯地图一致
       })
       console.log('获取到位置:', location)
 
-      // 注意：这里需要使用腾讯地图的逆地理编码API来获取城市名称
-      // 由于没有配置API密钥，这里使用简化的方式
-      // 实际项目中需要配置腾讯地图API密钥并调用逆地理编码接口
-      console.log('需要配置腾讯地图API密钥来获取城市名称')
+      // 调用后端逆地理编码接口
+      const res = await Network.request({
+        url: '/api/location/reverse-geocode',
+        method: 'GET',
+        data: {
+          lat: location.latitude,
+          lng: location.longitude
+        }
+      })
 
-      // 如果没有配置API密钥，返回默认省份
-      return '上海市'
+      console.log('逆地理编码响应:', res.data)
+
+      if (res.data?.code === 200 && res.data?.data) {
+        const cityName = res.data.data.city
+        console.log('获取到城市名称:', cityName)
+        Taro.showToast({
+          title: `已定位到${cityName}`,
+          icon: 'success',
+          duration: 1500
+        })
+        return cityName
+      } else {
+        console.error('逆地理编码失败:', res.data)
+        return '上海市'
+      }
     } catch (error) {
       console.error('获取位置失败:', error)
+      // 位置获取失败时，提示用户
+      Taro.showToast({
+        title: '位置获取失败，使用默认城市',
+        icon: 'none',
+        duration: 2000
+      })
       return '上海市'
     }
   }
@@ -130,10 +167,10 @@ const IndexPage = () => {
     loadCityList()
 
     // 尝试获取用户位置
-    const province = await getCurrentProvince()
-    if (province) {
-      setCurrentCity(province)
-      console.log('自动定位到省份:', province)
+    const city = await getCurrentCity()
+    if (city) {
+      setCurrentCity(city)
+      console.log('自动定位到城市:', city)
     }
   })
 
@@ -263,17 +300,18 @@ const IndexPage = () => {
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.25)',
               borderRadius: '20px',
-              paddingLeft: '16px',
+              paddingLeft: '12px',
               paddingRight: '8px',
               paddingTop: '8px',
               paddingBottom: '8px',
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px'
             }}
             onClick={handleCityPickerOpen}
           >
+            <Text style={{ fontSize: '14px', lineHeight: 1 }}>📍</Text>
             <Text className="block text-sm font-semibold text-white">{currentCity}</Text>
             <View
               style={{

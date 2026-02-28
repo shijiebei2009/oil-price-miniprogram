@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { OilPriceModule } from './oil-price/oil-price.module';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { OilPriceModule } from './oil-price/oil-price.module';
       envFilePath: '.env',
     }),
     OilPriceModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

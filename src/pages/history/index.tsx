@@ -37,7 +37,7 @@ const HistoryPage = () => {
 
       if (res.data?.code === 200 && res.data?.data) {
         const sortedData = [...res.data.data].sort((a, b) => {
-          return new Date(b.date).getTime() - new Date(a.date).getTime()
+          return new Date(a.date).getTime() - new Date(b.date).getTime()
         })
         setHistoryData(sortedData)
       }
@@ -126,7 +126,7 @@ const HistoryPage = () => {
           <View>
             <Text className="block text-base font-semibold mb-3 text-gray-900">价格记录</Text>
 
-            {historyData.map((item, index) => (
+            {[...historyData].reverse().map((item, index) => (
               <View key={index} className="bg-white border border-gray-100 rounded-xl p-4 mb-3">
                 <View className="flex flex-row items-center justify-between mb-3">
                   <Text className="block text-sm font-semibold text-gray-900">

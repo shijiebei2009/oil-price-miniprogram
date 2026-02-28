@@ -31,10 +31,10 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
     const screenHeight = systemInfo.windowHeight
 
     // 计算合理的图表尺寸
-    // 宽度：减去左右 padding（16px * 2 = 32px）
-    const width = screenWidth - 32
-    // 高度：使用屏幕高度的 70%，让图表更突出
-    const height = screenHeight * 0.7
+    // 宽度：全屏宽度，减少最小 padding（8px * 2 = 16px）
+    const width = screenWidth - 16
+    // 高度：使用屏幕高度的 90%，让图表占满屏幕
+    const height = screenHeight * 0.9
 
     setCanvasWidth(width)
     setCanvasHeight(height)
@@ -117,7 +117,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [12, 8, 10, 38],
+            padding: [8, 5, 8, 32],
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -127,33 +127,33 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 12,
-              margin: 5,
+              fontSize: 11,
+              margin: 3,
               scrollAlign: 'left'
             },
             yAxis: {
               gridType: 'dash',
               dashLength: 2,
               data: [{ min: 0, max: 10 }],
-              fontSize: 12,
-              margin: 5,
+              fontSize: 11,
+              margin: 3,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
               line: {
                 type: 'curve',
-                width: 4,
+                width: 5,
                 activeType: 'hollow',
-                activeWidth: 5
+                activeWidth: 6
               }
             },
             legend: {
               show: true,
               position: 'top',
-              padding: 5,
-              margin: 2,
-              fontSize: 12,
-              lineHeight: 14,
+              padding: 3,
+              margin: 1,
+              fontSize: 11,
+              lineHeight: 12,
               float: 'center'
             },
             tooltip: {

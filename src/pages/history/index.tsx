@@ -1,4 +1,4 @@
-import { View, Text } from '@tarojs/components'
+import { View, Text, ScrollView } from '@tarojs/components'
 import { useLoad } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
@@ -86,48 +86,52 @@ const HistoryPage = () => {
   })
 
   return (
-    <View className="w-full min-h-screen bg-white">
-      {/* 页面标题和筛选器 - 极简一行 */}
-      <View className="bg-white px-2 py-1 border-b border-gray-50 flex flex-row justify-between items-center">
-        <Text className="text-xs font-semibold text-gray-700">历史价格</Text>
-        <View className="flex flex-row gap-0.5">
-          {timeRanges.map((range, index) => (
-            <View
-              key={index}
-              className={`rounded px-1.5 py-0.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-50'}`}
-              onClick={() => handleRangeChange(range.value)}
-            >
-              <Text
-                className={`text-[10px] ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
+    <ScrollView scrollY className="w-full h-screen bg-white">
+      {/* 页面标题和筛选器 */}
+      <View className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-10 bg-opacity-95">
+        <View className="flex flex-row justify-between items-center mb-3">
+          <Text className="text-base font-bold text-gray-900">历史价格</Text>
+          <View className="flex flex-row gap-2">
+            {timeRanges.map((range, index) => (
+              <View
+                key={index}
+                className={`rounded-lg px-3 py-1.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-100'}`}
+                onClick={() => handleRangeChange(range.value)}
               >
-                {range.label}
-              </Text>
-            </View>
-          ))}
+                <Text
+                  className={`text-sm font-medium ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
+                >
+                  {range.label}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
 
-      {/* 走势图区域 - 占满剩余空间，高度基于屏幕计算 */}
-      <View className="w-full h-[65vh]">
+      {/* 走势图区域 - 固定高度 400px */}
+      <View className="w-full px-4 py-3">
         {historyData.length > 0 && (
           <>
             {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
-            <PriceChart
-              data={historyData.map((item) => ({
-                date: item.date,
-                gas92: item.gas92,
-                gas95: item.gas95,
-                gas98: item.gas98,
-                diesel0: item.diesel0
-              }))}
-              height="100%"
-            />
+            <View className="bg-gray-50 rounded-xl p-4">
+              <PriceChart
+                data={historyData.map((item) => ({
+                  date: item.date,
+                  gas92: item.gas92,
+                  gas95: item.gas95,
+                  gas98: item.gas98,
+                  diesel0: item.diesel0
+                }))}
+                height={400}
+              />
+            </View>
           </>
         )}
       </View>
 
       {/* 主要内容区域 */}
-      <View className="px-4 py-3">
+      <View className="px-4 py-3 pb-8">
         {/* 加载状态 */}
         {loading && (
           <View className="flex items-center justify-center py-12">
@@ -138,10 +142,10 @@ const HistoryPage = () => {
         {/* 历史价格列表 */}
         {!loading && historyData.length > 0 && (
           <View>
-            <Text className="block text-base font-semibold mb-3">价格记录</Text>
+            <Text className="block text-base font-semibold mb-3 text-gray-900">价格记录</Text>
 
             {historyData.map((item, index) => (
-              <View key={index} className="bg-white rounded-xl p-4 mb-3 shadow-sm">
+              <View key={index} className="bg-white border border-gray-100 rounded-xl p-4 mb-3">
                 <View className="flex flex-row items-center justify-between mb-3">
                   <Text className="block text-sm font-semibold text-gray-900">
                     {item.date}
@@ -188,7 +192,7 @@ const HistoryPage = () => {
           </View>
         )}
       </View>
-    </View>
+    </ScrollView>
   )
 }
 

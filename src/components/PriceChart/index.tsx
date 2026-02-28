@@ -10,7 +10,7 @@ interface PriceChartProps {
     gas98: number
     diesel0: number
   }>
-  height?: number | string
+  height?: number
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {

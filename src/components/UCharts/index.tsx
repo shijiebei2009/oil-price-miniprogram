@@ -115,16 +115,19 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
           const maxPrice = Math.max(...allPrices)
           const priceRange = maxPrice - minPrice
 
-          // Y 轴范围：直接使用数据范围，留 5% 空间
-          const yMin = minPrice - priceRange * 0.05
-          const yMax = maxPrice + priceRange * 0.05
+          // Y 轴范围：直接使用数据范围，留 3% 空间，让折线占更多
+          const yMin = minPrice - priceRange * 0.03
+          const yMax = maxPrice + priceRange * 0.03
 
-          console.log('UCharts: Y 轴范围', {
+          console.log('UCharts: 配置信息', {
             minPrice,
             maxPrice,
             priceRange,
             yMin,
             yMax,
+            canvasWidth: width,
+            canvasHeight: height,
+            padding: [8, 0, 8, 35],
             示例数据: data[0]
           })
 
@@ -157,7 +160,7 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [8, 0, 8, 40],  // padding：顶8，右0，底8，左40（优化宽度）
+            padding: [8, 0, 8, 35],  // padding：顶8，右0，底8，左35（减少左侧占用）
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -166,29 +169,28 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             xAxis: {
               disableGrid: true,
               itemCount: data.length,
-              labelCount: Math.min(6, data.length),  // 最多显示 6 个标签，避免挤在一起
-              fontSize: 14,  // 与价格记录字体大小一致
+              labelCount: Math.min(6, data.length),
+              fontSize: 14,
               margin: 8,
-              scrollAlign: 'center'  // 改为居中，减少右侧留白
+              scrollAlign: 'center'
             },
             yAxis: {
-              disableGrid: true,  // 隐藏网格线
-              min: yMin,
-              max: yMax,
-              fontSize: 14,  // 与价格记录字体大小一致
+              disableGrid: true,
+              // 不设置 min/max，让 uCharts 自动计算
+              fontSize: 14,
               margin: 8,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
               line: {
                 type: 'curve',
-                width: 5,
+                width: 8,  // 增加折线宽度
                 activeType: 'hollow',
-                activeWidth: 6
+                activeWidth: 10
               }
             },
             legend: {
-              show: false  // 隐藏图例，释放顶部空间
+              show: false
             },
             tooltip: {
               show: true,
@@ -207,7 +209,7 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             canvasId: canvasId,
             context: ctx,
             type: option.type,
-            fontSize: 14,  // 统一字体大小，与价格记录保持一致
+            fontSize: 14,
             legend: option.legend,
             background: option.background,
             pixelRatio: dpr,
@@ -220,10 +222,19 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             width: width,
             height: height,
             padding: option.padding,
-            extra: option.extra
+            extra: option.extra,
+            tooltip: option.tooltip  // 添加 tooltip 配置
           })
 
-          console.log('UCharts: 图表创建成功')
+          console.log('UCharts: 图表创建成功', {
+            实际配置: {
+              width,
+              height,
+              padding: option.padding,
+              yAxis: option.yAxis,
+              xAxis: option.xAxis
+            }
+          })
         }
       })
   }

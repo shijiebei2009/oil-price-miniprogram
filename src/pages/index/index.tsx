@@ -46,23 +46,13 @@ const IndexPage = () => {
 
   // 获取用户位置并转换为所在城市
   const getCurrentCity = async (): Promise<string> => {
-    const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
-
-    // H5 端提示用户需要手动选择城市
-    if (!isWeapp) {
-      console.log('H5 端位置获取受限，请手动选择城市')
-      Taro.showToast({
-        title: '请手动选择城市',
-        icon: 'none',
-        duration: 2000
-      })
-      return '上海市'
-    }
-
     try {
       console.log('开始获取用户位置...')
+
+      // 根据平台选择坐标系类型
+      const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
       const location = await Taro.getLocation({
-        type: 'gcj02' // 使用国测局坐标系，与腾讯地图一致
+        type: isWeapp ? 'gcj02' : 'wgs84' // 小程序用 gcj02，H5 用 wgs84（GPS 坐标）
       })
       console.log('获取到位置:', location)
 

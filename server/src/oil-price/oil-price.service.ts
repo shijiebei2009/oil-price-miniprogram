@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import axios from 'axios'
+import * as fs from 'fs'
+import * as path from 'path'
 
 export interface OilPrice {
   name: string
@@ -456,8 +458,9 @@ const CITIES = [
 ]
 
 @Injectable()
-export class OilPriceService {
+export class OilPriceService implements OnModuleInit {
   private readonly logger = new Logger(OilPriceService.name)
+  private readonly historyFilePath = path.join(__dirname, '../../data/oil-price-history.json')
 
   // 全国均价（基准）
   private nationalAverage = {
@@ -473,7 +476,7 @@ export class OilPriceService {
   // 省份价格数据
   private realProvincePrices: Record<string, { gas92: number; gas95: number; gas98: number; diesel0: number }> = {}
 
-  // 真实历史价格数据
+  // 真实历史价格数据（从文件读取）
   private realHistoryData: HistoryPriceData[] = []
 
   // 数据缓存
@@ -487,9 +490,49 @@ export class OilPriceService {
     pricesFetched: false
   }
 
-  constructor() {
+  // 模块初始化时加载历史数据
+  onModuleInit() {
+    this.loadHistoryData()
     this.fetchRealOilPrices()
     this.logger.log('油价服务初始化完成')
+  }
+
+  // 从文件加载历史数据
+  private loadHistoryData() {
+    try {
+      if (fs.existsSync(this.historyFilePath)) {
+        const data = fs.readFileSync(this.historyFilePath, 'utf-8')
+        this.realHistoryData = JSON.parse(data)
+        this.logger.log(`✅ 已从文件加载 ${this.realHistoryData.length} 条历史调价记录`)
+      } else {
+        this.logger.warn('⚠️ 历史数据文件不存在，将创建新文件')
+        this.saveHistoryData()
+      }
+    } catch (error) {
+      this.logger.error('加载历史数据失败:', error.message)
+      // 如果加载失败，使用空数组
+      this.realHistoryData = []
+    }
+  }
+
+  // 保存历史数据到文件
+  private saveHistoryData() {
+    try {
+      // 确保目录存在
+      const dir = path.dirname(this.historyFilePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      fs.writeFileSync(
+        this.historyFilePath,
+        JSON.stringify(this.realHistoryData, null, 2),
+        'utf-8'
+      )
+      this.logger.log('✅ 历史数据已保存到文件')
+    } catch (error) {
+      this.logger.error('保存历史数据失败:', error.message)
+    }
   }
 
   // 检查数据是否需要更新
@@ -597,8 +640,11 @@ export class OilPriceService {
         throw new Error('天聚数行 API 未返回任何有效数据')
       }
 
-      // 生成历史价格数据
+      // 生成历史价格数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变更并记录
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -687,8 +733,11 @@ export class OilPriceService {
         }
       })
 
-      // 生成历史价格数据
+      // 生成历史价格数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变更并记录
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -781,8 +830,11 @@ export class OilPriceService {
         }
       })
 
-      // 生成历史价格数据（基于真实的调价周期）
+      // 生成历史价格数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变更并记录
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -792,59 +844,83 @@ export class OilPriceService {
     }
   }
 
-  // 生成真实的历史价格数据（基于国家调价周期）
+  // 生成真实的历史价格数据（从持久化文件读取）
   private generateRealHistoryData() {
-    this.realHistoryData = []
+    // 从文件中读取历史数据（已在 onModuleInit 中加载）
+    // 这里不需要再做任何操作，因为数据已经从文件加载到 this.realHistoryData
+    this.logger.log(`📊 已加载 ${this.realHistoryData.length} 条历史调价记录`)
 
+    // 如果文件中没有任何数据，则生成初始数据
+    if (this.realHistoryData.length === 0) {
+      this.logger.warn('⚠️ 历史数据为空，生成初始数据')
+      this.generateInitialHistoryData()
+    }
+  }
+
+  // 生成初始历史数据（仅在文件为空时使用）
+  private generateInitialHistoryData() {
     const today = new Date()
     const basePrice92 = this.realCityPrices['北京']?.gas92 || 7.89
-    let currentPrice = basePrice92
 
-    // 📊 生成历史价格数据（仅记录调价日）
-    // 国家发改委每10个工作日调整一次油价（约14天一次）
-    // 只记录调价日的价格，这样图表才有意义
+    // 使用当前价格作为最新调价记录
+    this.realHistoryData.push({
+      date: today.toISOString().split('T')[0],
+      gas92: basePrice92,
+      gas95: basePrice92 * 1.06,
+      gas98: basePrice92 * 1.16,
+      diesel0: basePrice92 * 0.96,
+      change: 0
+    })
 
-    // 从当前价格开始，倒推生成过去180天的调价记录
-    // 每14天（约10个工作日）生成一个调价数据点
-    const adjustmentDays = 14 // 每14天调价一次（约10个工作日）
-    const maxHistoryDays = 180 // 最多180天历史数据
-    const numAdjustments = Math.floor(maxHistoryDays / adjustmentDays) // 最多12次调价
+    this.saveHistoryData()
+  }
 
-    for (let i = 0; i <= numAdjustments; i++) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i * adjustmentDays)
-
-      // 模拟价格波动
-      // 2024年-2025年的平均调价幅度约为 ±0.15元/次
-      // 越接近现在的调价，波动范围越大（模拟市场波动）
-      const volatility = 0.15 + (Math.random() * 0.10)
-      const adjustment = (Math.random() - 0.48) * volatility * 2
-      currentPrice += adjustment
-
-      // 确保价格在合理范围内
-      currentPrice = Math.max(6.5, Math.min(9.5, currentPrice))
-
-      const price92 = currentPrice
-      const price95 = currentPrice * 1.06
-      const price98 = currentPrice * 1.16
-      const price0 = currentPrice * 0.96
-
-      // 计算涨跌（与上一次调价相比）
-      const prevData = this.realHistoryData[this.realHistoryData.length - 1]
-      const change = prevData ? price92 - prevData.gas92 : 0
-
-      this.realHistoryData.push({
-        date: date.toISOString().split('T')[0],
-        gas92: parseFloat(price92.toFixed(2)),
-        gas95: parseFloat(price95.toFixed(2)),
-        gas98: parseFloat(price98.toFixed(2)),
-        diesel0: parseFloat(price0.toFixed(2)),
-        change: parseFloat(change.toFixed(3)),
-      })
+  // 检测价格变更并记录到历史数据
+  private detectAndRecordPriceChange() {
+    if (this.realHistoryData.length === 0) {
+      // 如果没有历史数据，添加当前价格
+      this.recordCurrentPrice()
+      return
     }
 
-    // 按日期升序排列（从过去到现在）
-    this.realHistoryData.reverse()
+    const latestRecord = this.realHistoryData[0]
+    const currentPrice = this.realCityPrices['北京']?.gas92 || 7.89
+
+    // 检测价格变化（阈值：0.01 元）
+    const priceChange = Math.abs(currentPrice - latestRecord.gas92)
+
+    if (priceChange > 0.01) {
+      // 价格发生变化，记录新的调价
+      this.logger.log(`📈 检测到价格变化：${latestRecord.gas92.toFixed(2)} → ${currentPrice.toFixed(2)} (${priceChange.toFixed(2)})`)
+      this.recordCurrentPrice()
+    } else {
+      this.logger.log('✅ 价格未发生变化，无需记录')
+    }
+  }
+
+  // 记录当前价格到历史数据
+  private recordCurrentPrice() {
+    const today = new Date()
+    const cityPrice = this.realCityPrices['北京'] || this.realCityPrices['北京'] || { gas92: 7.89, gas95: 8.37, gas98: 9.13, diesel0: 7.56 }
+
+    const newRecord: HistoryPriceData = {
+      date: today.toISOString().split('T')[0],
+      gas92: cityPrice.gas92,
+      gas95: cityPrice.gas95,
+      gas98: cityPrice.gas98,
+      diesel0: cityPrice.diesel0,
+      change: this.realHistoryData.length > 0
+        ? cityPrice.gas92 - this.realHistoryData[0].gas92
+        : 0
+    }
+
+    // 添加到历史数据的最前面
+    this.realHistoryData.unshift(newRecord)
+
+    // 保存到文件
+    this.saveHistoryData()
+
+    this.logger.log(`✅ 已记录新的调价：${newRecord.date}`)
   }
 
   // HTTP GET 请求
@@ -1125,12 +1201,38 @@ export class OilPriceService {
     const now = new Date()
     const nextAdjustmentDate = new Date(now)
 
+    // 如果没有历史数据，使用默认值
+    if (this.realHistoryData.length === 0) {
+      nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + 14)
+      return {
+        date: nextAdjustmentDate.toISOString().split('T')[0],
+        direction: 'stable',
+        expectedChange: 0,
+        daysRemaining: 14,
+        trend: '暂无历史数据，等待首次调价',
+      }
+    }
+
     // 根据最近的历史数据预测趋势
     const recentChanges = this.realHistoryData.slice(0, 7).map(d => d.change)
+
+    // 如果只有一条历史数据，无法计算趋势
+    if (recentChanges.length === 1) {
+      nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + 14)
+      return {
+        date: nextAdjustmentDate.toISOString().split('T')[0],
+        direction: 'stable',
+        expectedChange: 0,
+        daysRemaining: 14,
+        trend: '历史数据不足，请等待更多调价记录',
+      }
+    }
+
     const avgChange = recentChanges.reduce((sum, c) => sum + c, 0) / recentChanges.length
 
-    // 设置下次调价日期（14天后）
-    nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + 14)
+    // 计算平均调价间隔（基于历史数据）
+    const avgInterval = this.calculateAverageAdjustmentInterval()
+    nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + avgInterval)
 
     // 根据趋势预测方向
     let direction: 'up' | 'down' | 'stable'
@@ -1138,25 +1240,45 @@ export class OilPriceService {
 
     if (avgChange > 0.01) {
       direction = 'up'
-      trend = '国际原油价格持续上涨'
+      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格持续上涨，预计下次调价可能上涨`
     } else if (avgChange < -0.01) {
       direction = 'down'
-      trend = '国际原油价格有所回落'
+      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格有所回落，预计下次调价可能下跌`
     } else {
       direction = 'stable'
-      trend = '国际原油价格保持稳定'
+      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格保持稳定，预计下次调价可能持平`
     }
 
-    // 预期变化幅度
-    const expectedChange = Math.abs(avgChange) * 5 // 放大预测幅度
+    // 预期变化幅度（基于历史数据的平均变化）
+    const expectedChange = Math.abs(avgChange)
 
     return {
       date: nextAdjustmentDate.toISOString().split('T')[0],
       direction,
       expectedChange: parseFloat(expectedChange.toFixed(3)),
-      daysRemaining: 14,
+      daysRemaining: avgInterval,
       trend,
     }
+  }
+
+  // 计算平均调价间隔（基于历史数据）
+  private calculateAverageAdjustmentInterval(): number {
+    if (this.realHistoryData.length < 2) {
+      return 14 // 默认14天
+    }
+
+    let totalDays = 0
+    for (let i = 0; i < this.realHistoryData.length - 1; i++) {
+      const currentDate = new Date(this.realHistoryData[i].date)
+      const previousDate = new Date(this.realHistoryData[i + 1].date)
+      const diffDays = Math.ceil((currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24))
+      totalDays += diffDays
+    }
+
+    const avgInterval = Math.round(totalDays / (this.realHistoryData.length - 1))
+    this.logger.log(`📊 平均调价间隔: ${avgInterval} 天`)
+
+    return avgInterval
   }
 
   // TODO: 接入真实 API 的预留接口

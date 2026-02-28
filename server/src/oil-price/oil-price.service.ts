@@ -44,6 +44,53 @@ export interface CityData {
   diff: number // 与全国均价的差异
 }
 
+export interface ProvinceData {
+  name: string
+  gas92: number
+  gas95: number
+  gas98: number
+  diesel0: number
+  diff: number // 与全国均价的差异
+}
+
+// 省份数据（34个省级行政区）
+const PROVINCES = [
+  { name: '北京市', region: '华北', level: 1 },
+  { name: '上海市', region: '华东', level: 1 },
+  { name: '天津市', region: '华北', level: 1 },
+  { name: '重庆市', region: '西南', level: 1 },
+  { name: '河北省', region: '华北', level: 2 },
+  { name: '山西省', region: '华北', level: 2 },
+  { name: '内蒙古自治区', region: '华北', level: 2 },
+  { name: '辽宁省', region: '东北', level: 2 },
+  { name: '吉林省', region: '东北', level: 2 },
+  { name: '黑龙江省', region: '东北', level: 2 },
+  { name: '江苏省', region: '华东', level: 1 },
+  { name: '浙江省', region: '华东', level: 1 },
+  { name: '安徽省', region: '华东', level: 2 },
+  { name: '福建省', region: '华东', level: 2 },
+  { name: '江西省', region: '华东', level: 2 },
+  { name: '山东省', region: '华东', level: 1 },
+  { name: '河南省', region: '华中', level: 2 },
+  { name: '湖北省', region: '华中', level: 2 },
+  { name: '湖南省', region: '华中', level: 2 },
+  { name: '广东省', region: '华南', level: 1 },
+  { name: '广西壮族自治区', region: '华南', level: 2 },
+  { name: '海南省', region: '华南', level: 2 },
+  { name: '四川省', region: '西南', level: 2 },
+  { name: '贵州省', region: '西南', level: 2 },
+  { name: '云南省', region: '西南', level: 2 },
+  { name: '西藏自治区', region: '西南', level: 2 },
+  { name: '陕西省', region: '西北', level: 2 },
+  { name: '甘肃省', region: '西北', level: 2 },
+  { name: '青海省', region: '西北', level: 2 },
+  { name: '宁夏回族自治区', region: '西北', level: 2 },
+  { name: '新疆维吾尔自治区', region: '西北', level: 2 },
+  { name: '台湾省', region: '华东', level: 1 },
+  { name: '香港特别行政区', region: '华南', level: 1 },
+  { name: '澳门特别行政区', region: '华南', level: 1 },
+]
+
 // 城市数据（全国地级市）
 const CITIES = [
   // 直辖市
@@ -424,6 +471,9 @@ export class OilPriceService {
   // 从真实数据源获取各城市价格
   private realCityPrices: Record<string, { gas92: number; gas95: number; gas98: number; diesel0: number }> = {}
 
+  // 省份价格数据
+  private realProvincePrices: Record<string, { gas92: number; gas95: number; gas98: number; diesel0: number }> = {}
+
   // 真实历史价格数据
   private realHistoryData: HistoryPriceData[] = []
 
@@ -649,6 +699,41 @@ export class OilPriceService {
         }
       })
 
+      // 根据省份等级和地理位置计算省份价格
+      PROVINCES.forEach((province) => {
+        let modifier = 0
+
+        // 直辖市和一线省份（北京、上海、广东、江苏、浙江、山东）
+        if (['北京市', '上海市', '天津市', '重庆市', '广东省', '江苏省', '浙江省', '山东省'].includes(province.name)) {
+          modifier = 0.05
+        }
+        // 二线省份（经济发达地区）
+        else if (['河北省', '山西省', '辽宁省', '吉林省', '黑龙江省', '安徽省', '福建省', '江西省', '河南省', '湖北省', '湖南省', '四川省', '陕西省'].includes(province.name)) {
+          modifier = 0.02
+        }
+        // 三线省份（发展中地区）
+        else if (['内蒙古自治区', '广西壮族自治区', '海南省', '贵州省', '云南省', '西藏自治区', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区'].includes(province.name)) {
+          modifier = -0.03
+        }
+
+        // 南方地区价格通常略高（运输成本）
+        if (['上海市', '江苏省', '浙江省', '安徽省', '福建省', '江西省', '湖北省', '湖南省', '广东省', '广西壮族自治区', '海南省', '四川省', '贵州省', '云南省', '西藏自治区', '重庆市'].includes(province.name)) {
+          modifier += 0.03
+        }
+
+        // 沿海省份价格通常略高
+        if (['辽宁省', '河北省', '天津市', '山东省', '江苏省', '上海市', '浙江省', '福建省', '广东省', '广西壮族自治区', '海南省'].includes(province.name)) {
+          modifier += 0.02
+        }
+
+        this.realProvincePrices[province.name] = {
+          gas92: ndrBasePrices.gas92 + modifier,
+          gas95: ndrBasePrices.gas95 + modifier + 0.48,
+          gas98: ndrBasePrices.gas98 + modifier + 0.76,
+          diesel0: ndrBasePrices.diesel0 + modifier - 0.05,
+        }
+      })
+
       // 生成历史价格数据（基于真实的调价周期）
       this.generateRealHistoryData()
 
@@ -798,6 +883,63 @@ export class OilPriceService {
     }
   }
 
+  // 获取指定省份的当前油价（新接口）
+  getProvinceCurrentPrices(province: string = '北京市'): PriceData {
+    this.refreshData()
+
+    const provincePrice = this.realProvincePrices[province] || this.realProvincePrices['北京市']
+    const provinceInfo = PROVINCES.find((p) => p.name === province) || PROVINCES[0]
+
+    // 获取最新的历史数据作为参考
+    const latestHistory = this.realHistoryData[0]
+    const previousHistory = this.realHistoryData[1]
+
+    // 计算涨跌（与上一周期相比）
+    const change92 = latestHistory ? latestHistory.change : 0
+    const change95 = latestHistory ? latestHistory.change * 1.06 : 0
+    const change98 = latestHistory ? latestHistory.change * 1.16 : 0
+    const change0 = latestHistory ? latestHistory.change * 0.96 : 0
+
+    const currentPrices: OilPrice[] = [
+      {
+        name: '92号汽油',
+        price: provincePrice.gas92,
+        previousPrice: provincePrice.gas92 - change92,
+        change: change92
+      },
+      {
+        name: '95号汽油',
+        price: provincePrice.gas95,
+        previousPrice: provincePrice.gas95 - change95,
+        change: change95
+      },
+      {
+        name: '98号汽油',
+        price: provincePrice.gas98,
+        previousPrice: provincePrice.gas98 - change98,
+        change: change98
+      },
+      {
+        name: '0号柴油',
+        price: provincePrice.diesel0,
+        previousPrice: provincePrice.diesel0 - change0,
+        change: change0
+      },
+    ]
+
+    // 计算更新时间
+    const now = new Date()
+    const updateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} 00:00`
+
+    return {
+      currentPrices,
+      nextAdjustment: this.getMockNextAdjustment(),
+      updateTime,
+      cityName: provinceInfo.name,
+      provinceName: provinceInfo.name,
+    }
+  }
+
   // 获取所有城市列表
   getCityList(): Array<{ name: string; province: string }> {
     this.refreshData()
@@ -805,6 +947,15 @@ export class OilPriceService {
     return CITIES.map((city) => ({
       name: city.name,
       province: city.province,
+    }))
+  }
+
+  // 获取所有省份列表
+  getProvinceList(): Array<{ name: string; region: string; level: number }> {
+    return PROVINCES.map((province) => ({
+      name: province.name,
+      region: province.region,
+      level: province.level,
     }))
   }
 
@@ -824,6 +975,30 @@ export class OilPriceService {
       return {
         name: city.name,
         province: city.province,
+        gas92: parseFloat(price.gas92.toFixed(2)),
+        gas95: parseFloat(price.gas95.toFixed(2)),
+        gas98: parseFloat(price.gas98.toFixed(2)),
+        diesel0: parseFloat(price.diesel0.toFixed(2)),
+        diff: parseFloat(diff.toFixed(3)),
+      }
+    }).sort((a, b) => a.gas92 - b.gas92) // 按价格排序
+  }
+
+  // 获取所有省份的价格对比
+  getAllProvincePrices(): ProvinceData[] {
+    this.refreshData()
+
+    const avg92 = this.nationalAverage.gas92
+    const avg95 = this.nationalAverage.gas95
+    const avg98 = this.nationalAverage.gas98
+    const avg0 = this.nationalAverage.diesel0
+
+    return PROVINCES.map((province) => {
+      const price = this.realProvincePrices[province.name]
+      const diff = price.gas92 - avg92
+
+      return {
+        name: province.name,
         gas92: parseFloat(price.gas92.toFixed(2)),
         gas95: parseFloat(price.gas95.toFixed(2)),
         gas98: parseFloat(price.gas98.toFixed(2)),

@@ -29,7 +29,8 @@ interface PriceData {
 
 interface CityItem {
   name: string
-  province: string
+  region: string
+  level: number
   gas92: number
   gas95: number
   gas98: number
@@ -39,20 +40,20 @@ interface CityItem {
 const IndexPage = () => {
   const [loading, setLoading] = useState(true)
   const [priceData, setPriceData] = useState<PriceData | null>(null)
-  const [currentCity, setCurrentCity] = useState('北京')
+  const [currentCity, setCurrentCity] = useState('北京市')
   const [showCityPicker, setShowCityPicker] = useState(false)
   const [cityList, setCityList] = useState<CityItem[]>([])
 
   // 加载油价数据
-  const loadPriceData = async (city?: string) => {
+  const loadPriceData = async (province?: string) => {
     try {
       setLoading(true)
-      console.log('开始获取油价数据，城市:', city)
+      console.log('开始获取油价数据，省份:', province)
 
       const res = await Network.request({
-        url: '/api/oil-price/current',
+        url: '/api/oil-price/province/current',
         method: 'GET',
-        data: city ? { city } : {}
+        data: province ? { province } : {}
       })
 
       console.log('油价数据响应:', res.data)
@@ -74,7 +75,7 @@ const IndexPage = () => {
   const loadCityList = async () => {
     try {
       const res = await Network.request({
-        url: '/api/oil-price/cities/compare',
+        url: '/api/oil-price/provinces/compare',
         method: 'GET'
       })
 

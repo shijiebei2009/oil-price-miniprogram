@@ -24,6 +24,25 @@ export class OilPriceController {
     }
   }
 
+  // 获取当前油价（支持省份参数，新接口）
+  @Get('province/current')
+  getProvinceCurrentPrices(@Query('province') province?: string) {
+    console.log('收到获取省份油价请求，省份:', province)
+    const data = this.oilPriceService.getProvinceCurrentPrices(province)
+
+    console.log('返回响应:', {
+      code: 200,
+      msg: 'success',
+      data
+    })
+
+    return {
+      code: 200,
+      msg: 'success',
+      data
+    }
+  }
+
   // 获取城市列表
   @Get('cities')
   getCityList() {
@@ -43,11 +62,49 @@ export class OilPriceController {
     }
   }
 
+  // 获取省份列表
+  @Get('provinces')
+  getProvinceList() {
+    console.log('收到获取省份列表请求')
+    const data = this.oilPriceService.getProvinceList()
+
+    console.log('返回响应:', {
+      code: 200,
+      msg: 'success',
+      data
+    })
+
+    return {
+      code: 200,
+      msg: 'success',
+      data
+    }
+  }
+
   // 获取所有城市价格对比
   @Get('cities/compare')
   getAllCityPrices() {
     console.log('收到获取城市价格对比请求')
     const data = this.oilPriceService.getAllCityPrices()
+
+    console.log('返回响应:', {
+      code: 200,
+      msg: 'success',
+      data
+    })
+
+    return {
+      code: 200,
+      msg: 'success',
+      data
+    }
+  }
+
+  // 获取所有省份价格对比
+  @Get('provinces/compare')
+  getAllProvincePrices() {
+    console.log('收到获取省份价格对比请求')
+    const data = this.oilPriceService.getAllProvincePrices()
 
     console.log('返回响应:', {
       code: 200,

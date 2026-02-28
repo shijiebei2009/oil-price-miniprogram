@@ -6,7 +6,6 @@ import './index.css'
 
 interface CityData {
   name: string
-  province: string
   gas92: number
   gas95: number
   gas98: number
@@ -25,7 +24,7 @@ const CityPage = () => {
       console.log('开始获取城市价格数据')
 
       const res = await Network.request({
-        url: '/api/oil-price/cities/compare',
+        url: '/api/oil-price/provinces/compare',
         method: 'GET'
       })
 
@@ -70,9 +69,9 @@ const CityPage = () => {
     <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100">
-        <Text className="block text-lg font-bold text-gray-900">城市对比</Text>
+        <Text className="block text-lg font-bold text-gray-900">省份对比</Text>
         <Text className="block text-xs text-gray-500 mt-1">
-          全国均价基准对比
+          全国34个省级行政区价格对比
         </Text>
       </View>
 
@@ -94,9 +93,6 @@ const CityPage = () => {
                   <View>
                     <Text className="block text-base font-semibold text-gray-900">
                       {city.name}
-                    </Text>
-                    <Text className="block text-xs text-gray-500">
-                      {city.province}
                     </Text>
                   </View>
                   {city.diff !== 0 && (

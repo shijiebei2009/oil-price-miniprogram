@@ -2,9 +2,10 @@ import { View, Text, ScrollView, Input } from '@tarojs/components'
 import { useState, useEffect } from 'react'
 import './index.css'
 
-interface CityItem {
+interface ProvinceItem {
   name: string
-  province: string
+  region: string
+  level: number
   gas92: number
   gas95: number
   gas98: number
@@ -14,7 +15,7 @@ interface CityItem {
 interface CityPickerProps {
   visible: boolean
   currentCity: string
-  cities: CityItem[]
+  cities: ProvinceItem[]
   onSelect: (city: string) => void
   onClose: () => void
 }
@@ -27,7 +28,7 @@ const CityPicker: React.FC<CityPickerProps> = ({
   onClose
 }) => {
   const [searchText, setSearchText] = useState('')
-  const [filteredCities, setFilteredCities] = useState<CityItem[]>(cities)
+  const [filteredCities, setFilteredCities] = useState<ProvinceItem[]>(cities)
 
   useEffect(() => {
     if (visible) {
@@ -45,19 +46,19 @@ const CityPicker: React.FC<CityPickerProps> = ({
 
     const filtered = cities.filter(city =>
       city.name.includes(searchText) ||
-      city.province.includes(searchText)
+      city.region.includes(searchText)
     )
     setFilteredCities(filtered)
   }, [searchText, cities])
 
-  // 按省份分组
+  // 按区域分组
   const groupedCities = filteredCities.reduce((acc, city) => {
-    if (!acc[city.province]) {
-      acc[city.province] = []
+    if (!acc[city.region]) {
+      acc[city.region] = []
     }
-    acc[city.province].push(city)
+    acc[city.region].push(city)
     return acc
-  }, {} as Record<string, CityItem[]>)
+  }, {} as Record<string, ProvinceItem[]>)
 
   // 处理城市选择
   const handleCitySelect = (cityName: string) => {
@@ -74,7 +75,7 @@ const CityPicker: React.FC<CityPickerProps> = ({
       <View className="city-picker-content" onClick={(e) => e.stopPropagation()}>
         {/* 标题栏 */}
         <View className="city-picker-header">
-          <Text className="city-picker-title">选择城市</Text>
+          <Text className="city-picker-title">选择省份</Text>
           <Text className="city-picker-close" onClick={onClose}>✕</Text>
         </View>
 
@@ -83,7 +84,7 @@ const CityPicker: React.FC<CityPickerProps> = ({
           <View className="city-search-input-wrapper">
             <Input
               className="city-search-input"
-              placeholder="搜索城市"
+              placeholder="搜索省份"
               placeholderClass="city-search-placeholder"
               value={searchText}
               onInput={(e) => setSearchText(e.detail.value)}
@@ -93,13 +94,13 @@ const CityPicker: React.FC<CityPickerProps> = ({
 
         {/* 城市列表 */}
         <ScrollView className="city-list" scrollY>
-          {Object.keys(groupedCities).map(province => (
-            <View key={province} className="city-group">
+          {Object.keys(groupedCities).map(region => (
+            <View key={region} className="city-group">
               <View className="city-group-header">
-                <Text className="city-group-title">{province}</Text>
+                <Text className="city-group-title">{region}</Text>
               </View>
 
-              {groupedCities[province].map(city => (
+              {groupedCities[region].map(city => (
                 <View
                   key={city.name}
                   className={`city-item ${currentCity === city.name ? 'city-item-active' : ''}`}
@@ -121,7 +122,7 @@ const CityPicker: React.FC<CityPickerProps> = ({
 
           {filteredCities.length === 0 && (
             <View className="city-empty">
-              <Text className="city-empty-text">未找到相关城市</Text>
+              <Text className="city-empty-text">未找到相关省份</Text>
             </View>
           )}
         </ScrollView>

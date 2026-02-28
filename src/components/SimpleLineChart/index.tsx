@@ -1,5 +1,5 @@
 import { View, Canvas } from '@tarojs/components'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Taro from '@tarojs/taro'
 
 interface SimpleLineChartProps {
@@ -17,86 +17,22 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
   const [canvasId] = useState(`chart-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
-  useEffect(() => {
-    if (!data || data.length === 0) {
-      return
-    }
-
-    const initChart = () => {
-      // 先查询容器尺寸
-      const containerQuery = Taro.createSelectorQuery()
-      containerQuery.select(`#chart-container-${canvasId}`)
-        .fields({ size: true })
-        .exec((res: any) => {
-          let containerWidth = 0
-          let containerHeight = height
-
-          if (res && res[0]) {
-            containerWidth = res[0].width
-            containerHeight = res[0].height || height
-          } else {
-            // 降级方案：使用屏幕宽度
-            const systemInfo = Taro.getSystemInfoSync()
-            containerWidth = systemInfo.windowWidth
-          }
-
-          console.log('SimpleLineChart: 容器尺寸', { containerWidth, containerHeight })
-
-          // 查询 Canvas 节点
-          const query = Taro.createSelectorQuery()
-          query.select(`#${canvasId}`)
-            .fields({ node: true, size: true })
-            .exec((res: any) => {
-              console.log('SimpleLineChart: Canvas 查询结果', res)
-
-              if (res && res[0]) {
-                const { node: canvas, width, height } = res[0]
-                console.log('SimpleLineChart: Canvas 信息', {
-                  canvas: canvas ? '[HTMLElement<canvas>]' : null,
-                  width,
-                  height
-                })
-
-                canvasRef.current = canvas
-
-                const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-                const finalWidth = width || containerWidth
-                const finalHeight = height || containerHeight
-
-                console.log('SimpleLineChart: 最终使用尺寸', { finalWidth, finalHeight, dpr })
-
-                canvas.width = finalWidth * dpr
-                canvas.height = finalHeight * dpr
-
-                const ctx = canvas.getContext('2d')
-                ctx.scale(dpr, dpr)
-
-                drawChart(ctx, finalWidth, finalHeight)
-              } else {
-                console.error('SimpleLineChart: Canvas 查询失败', res)
-              }
-            })
-        })
-    }
-
-    setTimeout(initChart, 500)
-  }, [data, canvasId, height])
-
-  const drawChart = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+  // 绘制图表
+  const drawChart = useCallback((ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number) => {
     if (!data || data.length === 0) return
 
-    console.log('SimpleLineChart: 开始绘制图表', { width, height, dataLength: data.length })
+    console.log('SimpleLineChart: 开始绘制图表', { canvasWidth, canvasHeight, dataLength: data.length })
 
     const padding = { top: 20, right: 20, bottom: 60, left: 50 }
-    const chartWidth = width - padding.left - padding.right
-    const chartHeight = height - padding.top - padding.bottom
+    const chartWidth = canvasWidth - padding.left - padding.right
+    const chartHeight = canvasHeight - padding.top - padding.bottom
 
     console.log('SimpleLineChart: 绘图区域', {
       padding,
       chartWidth,
       chartHeight,
-      canvasWidth: width,
-      canvasHeight: height
+      canvasWidth,
+      canvasHeight
     })
 
     // 计算数据范围
@@ -125,7 +61,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
       const value = maxPrice - (priceRange / ySteps) * i
 
       ctx.moveTo(padding.left, y)
-      ctx.lineTo(width - padding.right, y)
+      ctx.lineTo(canvasWidth - padding.right, y)
 
       // Y 轴标签
       ctx.fillStyle = '#666'
@@ -183,7 +119,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
     data.forEach((item, index) => {
       const x = padding.left + (chartWidth / (data.length - 1)) * index
       const label = item.date.substring(5) // 只显示月-日
-      const labelY = height - padding.bottom + 35
+      const labelY = canvasHeight - padding.bottom + 35
 
       // 保存当前状态
       ctx.save()
@@ -202,7 +138,73 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
     })
 
     console.log('SimpleLineChart: 图表绘制完成')
-  }
+  }, [data])
+
+  // 初始化图表
+  useEffect(() => {
+    if (!data || data.length === 0) {
+      return
+    }
+
+    const initChart = () => {
+      // 先查询容器尺寸
+      const containerQuery = Taro.createSelectorQuery()
+      containerQuery.select(`#chart-container-${canvasId}`)
+        .fields({ size: true })
+        .exec((res: any) => {
+          let containerWidth = 0
+          let containerHeight = height
+
+          if (res && res[0]) {
+            containerWidth = res[0].width
+            containerHeight = res[0].height || height
+          } else {
+            // 降级方案：使用屏幕宽度
+            const systemInfo = Taro.getSystemInfoSync()
+            containerWidth = systemInfo.windowWidth
+          }
+
+          console.log('SimpleLineChart: 容器尺寸', { containerWidth, containerHeight })
+
+          // 查询 Canvas 节点
+          const query = Taro.createSelectorQuery()
+          query.select(`#${canvasId}`)
+            .fields({ node: true, size: true })
+            .exec((canvasRes: any) => {
+              console.log('SimpleLineChart: Canvas 查询结果', canvasRes)
+
+              if (canvasRes && canvasRes[0]) {
+                const { node: canvas, width: nodeWidth, height: nodeHeight } = canvasRes[0]
+                console.log('SimpleLineChart: Canvas 信息', {
+                  canvas: canvas ? '[HTMLElement<canvas>]' : null,
+                  width: nodeWidth,
+                  height: nodeHeight
+                })
+
+                canvasRef.current = canvas
+
+                const dpr = Taro.getSystemInfoSync().pixelRatio || 1
+                const finalWidth = nodeWidth || containerWidth
+                const finalHeight = nodeHeight || containerHeight
+
+                console.log('SimpleLineChart: 最终使用尺寸', { finalWidth, finalHeight, dpr })
+
+                canvas.width = finalWidth * dpr
+                canvas.height = finalHeight * dpr
+
+                const ctx = canvas.getContext('2d')
+                ctx.scale(dpr, dpr)
+
+                drawChart(ctx, finalWidth, finalHeight)
+              } else {
+                console.error('SimpleLineChart: Canvas 查询失败', canvasRes)
+              }
+            })
+        })
+    }
+
+    setTimeout(initChart, 500)
+  }, [data, canvasId, height, drawChart])
 
   return (
     <View id={`chart-container-${canvasId}`} style={{ width: '100%', height: `${height}px`, backgroundColor: '#f5f5f5' }}>

@@ -80,7 +80,8 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
         uChartsRef.current = null
       }
     }
-  }, [data])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, canvasId])
 
   const initChart = (width: number, height: number) => {
     const query = Taro.createSelectorQuery()

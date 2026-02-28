@@ -111,16 +111,17 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
           const maxPrice = Math.max(...allPrices)
           const priceRange = maxPrice - minPrice
 
-          // Y 轴范围：数据范围 + 上下各留 10% 空间
-          const yMin = Math.max(0, minPrice - priceRange * 0.1)
-          const yMax = maxPrice + priceRange * 0.1
+          // Y 轴范围：直接使用数据范围，留 5% 空间
+          const yMin = minPrice - priceRange * 0.05
+          const yMax = maxPrice + priceRange * 0.05
 
           console.log('UCharts: Y 轴范围', {
             minPrice,
             maxPrice,
             priceRange,
             yMin,
-            yMax
+            yMax,
+            示例数据: data[0]
           })
 
           const series = [
@@ -168,7 +169,8 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             },
             yAxis: {
               disableGrid: true,  // 隐藏网格线
-              data: [{ min: yMin, max: yMax }],
+              min: yMin,
+              max: yMax,
               fontSize: 14,  // 与价格记录字体大小一致
               margin: 8,
               format: (val: number) => val.toFixed(2)

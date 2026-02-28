@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad, showToast, requestSubscribeMessage, login } from '@tarojs/taro'
+import { useLoad, showToast, requestSubscribeMessage, login, getStorageSync, setStorageSync } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import './index.css'
@@ -12,15 +12,25 @@ const NoticePage = () => {
   const [province, setProvince] = useState<string>('')
   const [city, setCity] = useState<string>('')
 
-  // 获取用户 openid
+  // 获取用户 openid（使用本地缓存保持一致）
   const getOpenid = async () => {
     try {
+      // 先从本地存储获取
+      let cachedOpenid = getStorageSync('openid')
+      if (cachedOpenid) {
+        console.log('从缓存获取 openid:', cachedOpenid)
+        setOpenid(cachedOpenid)
+        return cachedOpenid
+      }
+
+      // 缓存不存在，尝试登录获取
       const loginRes = await login()
       console.log('登录成功，code:', loginRes.code)
 
-      // TODO: 调用后端接口用 code 换取 openid
-      // 暂时使用模拟的 openid
-      const mockOpenid = `mock_${Date.now()}`
+      // TODO: 调用后端接口用 code 换取真实的 openid
+      // 暂时使用固定的测试 openid（确保一致性）
+      const mockOpenid = 'mock_test_user_12345'
+      setStorageSync('openid', mockOpenid)
       setOpenid(mockOpenid)
       return mockOpenid
     } catch (error) {
@@ -30,6 +40,43 @@ const NoticePage = () => {
         icon: 'none'
       })
       return null
+    }
+  }
+
+  // 查询用户的订阅状态
+  const loadUserSubscriptions = async () => {
+    try {
+      const currentOpenid = await getOpenid()
+      if (!currentOpenid) {
+        return
+      }
+
+      const result = await Network.request({
+        url: '/api/subscription-message',
+        data: { openid: currentOpenid }
+      })
+
+      console.log('查询订阅结果:', result.data)
+
+      if (result.data.code === 200 && result.data.data) {
+        const subscriptions = result.data.data
+
+        // 检查是否有调价提醒订阅
+        const priceChangeSub = subscriptions.find((sub: any) => sub.scene === 'price_change')
+        if (priceChangeSub) {
+          setAdjustmentNoticeEnabled(true)
+          setNoticeEnabled(true)
+        }
+
+        // 检查是否有价格变动提醒订阅
+        const priceAlertSub = subscriptions.find((sub: any) => sub.scene === 'price_alert')
+        if (priceAlertSub) {
+          setPriceChangeNoticeEnabled(true)
+          setNoticeEnabled(true)
+        }
+      }
+    } catch (error) {
+      console.error('查询订阅状态失败:', error)
     }
   }
 
@@ -224,8 +271,8 @@ const NoticePage = () => {
     setProvince('北京市')
     setCity('北京')
 
-    // TODO: 从后端查询用户当前的订阅状态
-    getOpenid()
+    // 查询用户的订阅状态
+    loadUserSubscriptions()
   })
 
   return (

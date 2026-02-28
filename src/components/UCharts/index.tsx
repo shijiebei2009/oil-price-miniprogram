@@ -119,18 +119,6 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
           const yMin = minPrice - priceRange * 0.03
           const yMax = maxPrice + priceRange * 0.03
 
-          console.log('UCharts: 配置信息', {
-            minPrice,
-            maxPrice,
-            priceRange,
-            yMin,
-            yMax,
-            canvasWidth: width,
-            canvasHeight: height,
-            padding: [8, 0, 8, 35],
-            示例数据: data[0]
-          })
-
           const series = [
             {
               name: '92#汽油',
@@ -154,6 +142,23 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             }
           ]
 
+          console.log('UCharts: 配置信息', {
+            minPrice,
+            maxPrice,
+            priceRange,
+            yMin,
+            yMax,
+            canvasWidth: width,
+            canvasHeight: height,
+            padding: [8, 0, 8, 35],
+            示例数据: data[0],
+            series数据: series.map(s => ({
+              name: s.name,
+              数据点数: s.data.length,
+              前3个数据点: s.data.slice(0, 3)
+            }))
+          })
+
           // uCharts 配置
           const option = {
             type: 'line',
@@ -161,7 +166,7 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             width: width,
             height: height,
             padding: [8, 0, 8, 35],  // padding：顶8，右0，底8，左35（减少左侧占用）
-            animation: true,
+            animation: false,  // 禁用动画，避免错误
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
             categories,
@@ -176,18 +181,10 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             },
             yAxis: {
               disableGrid: true,
-              // 不设置 min/max，让 uCharts 自动计算
+              data: [{ min: yMin, max: yMax }],  // 使用 data 格式
               fontSize: 14,
               margin: 8,
               format: (val: number) => val.toFixed(2)
-            },
-            extra: {
-              line: {
-                type: 'curve',
-                width: 8,  // 增加折线宽度
-                activeType: 'hollow',
-                activeWidth: 10
-              }
             },
             legend: {
               show: false

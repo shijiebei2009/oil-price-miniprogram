@@ -2,10 +2,8 @@ import { View, Text, ScrollView } from '@tarojs/components'
 import { useLoad } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
-import PriceChart from '@/components/PriceChart'
+import SimpleLineChart from '@/components/SimpleLineChart'
 import './index.css'
-
-const isH5 = process.env.TARO_ENV === 'h5'
 
 interface HistoryPriceData {
   date: string
@@ -74,8 +72,8 @@ const HistoryPage = () => {
     loadHistoryData(selectedRange)
   })
 
-  const renderContent = () => (
-    <>
+  return (
+    <ScrollView scrollY className="w-full h-screen bg-white">
       {/* 页面标题和筛选器 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-10 bg-opacity-95">
         <View className="flex flex-row justify-between items-center mb-3">
@@ -101,21 +99,18 @@ const HistoryPage = () => {
       {/* 走势图区域 - 固定高度 400px */}
       <View className="w-full px-2 py-3">
         {historyData.length > 0 && (
-          <>
-            {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
-            <View className="bg-gray-50 rounded-xl p-2">
-              <PriceChart
-                data={historyData.map((item) => ({
-                  date: item.date,
-                  gas92: item.gas92,
-                  gas95: item.gas95,
-                  gas98: item.gas98,
-                  diesel0: item.diesel0
-                }))}
-                height={400}
-              />
-            </View>
-          </>
+          <View className="bg-gray-50 rounded-xl p-2">
+            <SimpleLineChart
+              data={historyData.map((item) => ({
+                date: item.date,
+                gas92: item.gas92,
+                gas95: item.gas95,
+                gas98: item.gas98,
+                diesel0: item.diesel0
+              }))}
+              height={400}
+            />
+          </View>
         )}
       </View>
 
@@ -178,21 +173,7 @@ const HistoryPage = () => {
           </View>
         )}
       </View>
-    </>
-  )
-
-  return (
-    <View style={{ minHeight: '100vh' }}>
-      {isH5 ? (
-        <ScrollView scrollY className="w-full h-screen bg-white">
-          {renderContent()}
-        </ScrollView>
-      ) : (
-        <ScrollView scrollY className="w-full h-screen bg-white">
-          {renderContent()}
-        </ScrollView>
-      )}
-    </View>
+    </ScrollView>
   )
 }
 

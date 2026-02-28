@@ -950,13 +950,30 @@ export class OilPriceService {
     }))
   }
 
-  // 获取所有省份列表
-  getProvinceList(): Array<{ name: string; region: string; level: number }> {
-    return PROVINCES.map((province) => ({
-      name: province.name,
-      region: province.region,
-      level: province.level,
-    }))
+  // 获取所有省份列表（包含油价信息）
+  getProvinceList(): Array<{
+    name: string
+    region: string
+    level: number
+    gas92: number
+    gas95: number
+    gas98: number
+    diesel0: number
+  }> {
+    this.refreshData()
+
+    return PROVINCES.map((province) => {
+      const price = this.realProvincePrices[province.name]
+      return {
+        name: province.name,
+        region: province.region,
+        level: province.level,
+        gas92: price ? parseFloat(price.gas92.toFixed(2)) : 0,
+        gas95: price ? parseFloat(price.gas95.toFixed(2)) : 0,
+        gas98: price ? parseFloat(price.gas98.toFixed(2)) : 0,
+        diesel0: price ? parseFloat(price.diesel0.toFixed(2)) : 0,
+      }
+    })
   }
 
   // 获取所有城市的价格对比

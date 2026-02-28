@@ -108,7 +108,10 @@ const CityPicker: React.FC<CityPickerProps> = ({
                 >
                   <View className="city-item-left">
                     <Text className="block city-name">{city.name}</Text>
-                    <Text className="block city-price">92#: {(city.gas92 ?? 0).toFixed(2)}元</Text>
+                    <View className="city-price-row">
+                      <Text className="block city-price">92#: {(city.gas92 ?? 0).toFixed(2)}元</Text>
+                      <Text className="block city-price city-price-95">95#: {(city.gas95 ?? 0).toFixed(2)}元</Text>
+                    </View>
                   </View>
                   {currentCity === city.name && (
                     <View className="city-item-check">

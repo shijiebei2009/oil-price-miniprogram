@@ -41,8 +41,12 @@ const HistoryPage = () => {
       console.log('历史价格数据响应:', res.data)
 
       if (res.data?.code === 200 && res.data?.data) {
-        setHistoryData(res.data.data)
-        console.log('历史价格数据解析成功:', res.data.data)
+        // 按日期倒序排序（由近及远）
+        const sortedData = [...res.data.data].sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime()
+        })
+        setHistoryData(sortedData)
+        console.log('历史价格数据解析成功（已按日期倒排）:', sortedData)
       } else {
         console.error('历史价格数据格式错误:', res.data)
       }

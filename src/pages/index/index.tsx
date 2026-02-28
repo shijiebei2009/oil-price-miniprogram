@@ -280,44 +280,6 @@ const IndexPage = () => {
         </View>
       </View>
 
-      {/* 分享按钮区域 - 首屏 */}
-      <View className="mx-3 mt-3">
-        <View
-          className="rounded-2xl p-4 shadow-sm"
-          style={{
-            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            animation: 'bounce 2s infinite'
-          }}
-          onClick={handleShare}
-        >
-          <View style={{ flex: 1 }}>
-            <Text className="block text-base font-bold text-white mb-1">
-              分享给好友
-            </Text>
-            <Text className="block text-xs text-white opacity-90">
-              让更多人了解实时油价
-            </Text>
-          </View>
-          <View
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255, 255, 255, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Text style={{ fontSize: '24px' }}>🎁</Text>
-          </View>
-        </View>
-      </View>
-
       {/* 主要内容区域 */}
       <View className="p-3">
         {/* 加载状态 */}
@@ -470,6 +432,44 @@ const IndexPage = () => {
             </Text>
           </View>
         )}
+      </View>
+
+      {/* 分享按钮区域 - 页面底部 */}
+      <View className="mx-3 mb-3">
+        <View
+          className="rounded-2xl p-4 shadow-sm"
+          style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            animation: 'bounce 2s infinite'
+          }}
+          onClick={handleShare}
+        >
+          <View style={{ flex: 1 }}>
+            <Text className="block text-base font-bold text-white mb-1">
+              分享给好友
+            </Text>
+            <Text className="block text-xs text-white opacity-90">
+              让更多人了解实时油价
+            </Text>
+          </View>
+          <View
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Text style={{ fontSize: '24px' }}>🎁</Text>
+          </View>
+        </View>
       </View>
 
       {/* 城市选择器 */}

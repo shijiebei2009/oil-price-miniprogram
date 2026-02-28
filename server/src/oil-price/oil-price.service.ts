@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import https from 'https'
-import http from 'http'
+import axios from 'axios'
 
 export interface OilPrice {
   name: string
@@ -562,8 +561,7 @@ export class OilPriceService {
       for (const prov of provincesToQuery) {
         try {
           const apiUrl = `https://apis.tianapi.com/oilprice/index?key=${apiKey}&prov=${prov}`
-          const data = await this.httpGet(apiUrl)
-          const jsonData = JSON.parse(data)
+          const jsonData = await this.httpGet(apiUrl)
 
           this.logger.log(`天聚数行 API 返回数据（${prov}）:`, jsonData)
 
@@ -594,6 +592,11 @@ export class OilPriceService {
 
       this.logger.log(`成功从天聚数行获取 ${Object.keys(this.realCityPrices).length} 个城市的数据`)
 
+      // 如果没有获取到任何城市数据，抛出错误，让系统尝试其他数据源
+      if (Object.keys(this.realCityPrices).length === 0) {
+        throw new Error('天聚数行 API 未返回任何有效数据')
+      }
+
       // 生成历史价格数据
       this.generateRealHistoryData()
 
@@ -612,8 +615,7 @@ export class OilPriceService {
       this.logger.log('正在从聚合数据 API 获取全国油价数据...')
 
       const apiUrl = `http://apis.juhe.cn/gnyj/query?key=${apiKey}`
-      const data = await this.httpGet(apiUrl)
-      const jsonData = JSON.parse(data)
+      const jsonData = await this.httpGet(apiUrl)
 
       if (jsonData.error_code !== 0) {
         throw new Error(`聚合数据 API 返回错误: ${jsonData.reason}`)
@@ -639,6 +641,52 @@ export class OilPriceService {
         this.logger.log(`成功从聚合数据获取 ${jsonData.result.length} 个城市的数据`)
       }
 
+      // 根据城市数据计算省份价格（使用映射表）
+      // 聚合数据 API 返回的城市名称可能与 CITIES 数组不匹配，需要映射
+      const cityToProvinceMap: Record<string, string> = {
+        '北京': '北京市',
+        '上海': '上海市',
+        '天津': '天津市',
+        '重庆': '重庆市',
+        '河北': '河北省',
+        '山西': '山西省',
+        '内蒙古': '内蒙古自治区',
+        '辽宁': '辽宁省',
+        '吉林': '吉林省',
+        '黑龙江': '黑龙江省',
+        '江苏': '江苏省',
+        '浙江': '浙江省',
+        '安徽': '安徽省',
+        '福建': '福建省',
+        '江西': '江西省',
+        '山东': '山东省',
+        '河南': '河南省',
+        '湖北': '湖北省',
+        '湖南': '湖南省',
+        '广东': '广东省',
+        '广西': '广西壮族自治区',
+        '海南': '海南省',
+        '四川': '四川省',
+        '贵州': '贵州省',
+        '云南': '云南省',
+        '西藏': '西藏自治区',
+        '陕西': '陕西省',
+        '甘肃': '甘肃省',
+        '青海': '青海省',
+        '宁夏': '宁夏回族自治区',
+        '新疆': '新疆维吾尔自治区',
+      }
+
+      Object.entries(this.realCityPrices).forEach(([cityName, cityPrice]) => {
+        // 检查是否是省份名称（通过映射表查找）
+        const provinceName = cityToProvinceMap[cityName] || cityName
+
+        // 如果这个城市/省份有价格数据，用它来代表该省的价格
+        if (!this.realProvincePrices[provinceName]) {
+          this.realProvincePrices[provinceName] = { ...cityPrice }
+        }
+      })
+
       // 生成历史价格数据
       this.generateRealHistoryData()
 
@@ -661,7 +709,6 @@ export class OilPriceService {
       // 基准价格参考：2025年2月26日的国家调价后的平均价格
 
       // 2025年2月26日国家发改委调价后的全国平均价格（真实数据）
-      const today = new Date()
       const ndrBasePrices = {
         gas92: 7.89,
         gas95: 8.37,
@@ -801,28 +848,20 @@ export class OilPriceService {
   }
 
   // HTTP GET 请求
-  private httpGet(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const client = url.startsWith('https') ? https : http
-
-      client.get(url, (res) => {
-        let data = ''
-
-        res.on('data', (chunk) => {
-          data += chunk
-        })
-
-        res.on('end', () => {
-          if (res.statusCode === 200) {
-            resolve(data)
-          } else {
-            reject(new Error(`HTTP ${res.statusCode}`))
-          }
-        })
-      }).on('error', (error) => {
-        reject(error)
+  private async httpGet(url: string): Promise<any> {
+    try {
+      const response = await axios.get(url, {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
       })
-    })
+      // axios 已经自动解析了 JSON，直接返回 data
+      return response.data
+    } catch (error) {
+      this.logger.error(`HTTP GET failed: ${error.message}`)
+      throw error
+    }
   }
 
 
@@ -835,7 +874,6 @@ export class OilPriceService {
 
     // 获取最新的历史数据作为参考
     const latestHistory = this.realHistoryData[0]
-    const previousHistory = this.realHistoryData[1]
 
     // 计算涨跌（与上一周期相比）
     const change92 = latestHistory ? latestHistory.change : 0
@@ -890,7 +928,7 @@ export class OilPriceService {
     const provincePrice = this.realProvincePrices[province] || this.realProvincePrices['北京市']
     const provinceInfo = PROVINCES.find((p) => p.name === province) || PROVINCES[0]
 
-    // 获取最新的历史数据作为参考
+    // 获取最新的历史数据作为参考（防御性编程）
     const latestHistory = this.realHistoryData[0]
 
     // 计算previousPrice和change
@@ -898,7 +936,7 @@ export class OilPriceService {
     let previousPrice92, previousPrice95, previousPrice98, previousPrice0
     let change92, change95, change98, change0
 
-    if (latestHistory) {
+    if (latestHistory && this.realHistoryData.length > 0) {
       // 如果有历史数据，基于历史数据计算
       // 假设当前价格比最后一次调价日期略有波动（±0.05）
       const currentFluctuation = (Math.random() - 0.5) * 0.10
@@ -1007,12 +1045,23 @@ export class OilPriceService {
     this.refreshData()
 
     const avg92 = this.nationalAverage.gas92
-    const avg95 = this.nationalAverage.gas95
-    const avg98 = this.nationalAverage.gas98
-    const avg0 = this.nationalAverage.diesel0
 
     return CITIES.map((city) => {
       const price = this.realCityPrices[city.name]
+
+      // 防御性编程：如果找不到城市价格，使用默认值
+      if (!price) {
+        return {
+          name: city.name,
+          province: city.province,
+          gas92: 0,
+          gas95: 0,
+          gas98: 0,
+          diesel0: 0,
+          diff: 0,
+        }
+      }
+
       const diff = price.gas92 - avg92
 
       return {
@@ -1032,12 +1081,22 @@ export class OilPriceService {
     this.refreshData()
 
     const avg92 = this.nationalAverage.gas92
-    const avg95 = this.nationalAverage.gas95
-    const avg98 = this.nationalAverage.gas98
-    const avg0 = this.nationalAverage.diesel0
 
     return PROVINCES.map((province) => {
       const price = this.realProvincePrices[province.name]
+
+      // 防御性编程：如果找不到省份价格，使用默认值
+      if (!price) {
+        return {
+          name: province.name,
+          gas92: 0,
+          gas95: 0,
+          gas98: 0,
+          diesel0: 0,
+          diff: 0,
+        }
+      }
+
       const diff = price.gas92 - avg92
 
       return {

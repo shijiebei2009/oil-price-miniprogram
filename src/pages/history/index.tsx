@@ -107,8 +107,8 @@ const HistoryPage = () => {
         </View>
       </View>
 
-      {/* 走势图区域 - 无任何 padding */}
-      <View>
+      {/* 走势图区域 - 占满剩余空间，高度基于屏幕计算 */}
+      <View className="w-full h-[65vh]">
         {historyData.length > 0 && (
           <>
             {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
@@ -120,6 +120,7 @@ const HistoryPage = () => {
                 gas98: item.gas98,
                 diesel0: item.diesel0
               }))}
+              height="100%"
             />
           </>
         )}

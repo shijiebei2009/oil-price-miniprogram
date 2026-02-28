@@ -13,7 +13,7 @@ interface PriceChartProps {
   height?: number
 }
 
-const PriceChart: React.FC<PriceChartProps> = ({ data }) => {
+const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {
   if (data.length === 0) {
     return (
       <View className="price-chart">
@@ -27,10 +27,10 @@ const PriceChart: React.FC<PriceChartProps> = ({ data }) => {
   }
 
   return (
-    <View className="price-chart">
+    <View className="price-chart" style={{ width: '100%', height: height || 'auto' }}>
       {/* 图表区域 */}
-      <View className="chart-container">
-        <UCharts data={data} />
+      <View className="chart-container" style={{ width: '100%', height: '100%' }}>
+        <UCharts data={data} height={height} />
       </View>
     </View>
   )

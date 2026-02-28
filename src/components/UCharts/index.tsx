@@ -33,8 +33,19 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
     // 计算合理的图表尺寸
     // 宽度：全屏宽度，减少最小 padding（8px * 2 = 16px）
     const width = screenWidth - 16
-    // 高度：使用屏幕高度的 98%，让图表几乎占满整个屏幕
-    const height = screenHeight * 0.98
+    // 高度：优先使用外部传入的 height（百分比），否则使用屏幕高度的 98%
+    let height: number
+    if (propHeight && typeof propHeight === 'string' && propHeight.includes('%')) {
+      // 如果传入的是百分比（如 "100%"），计算实际像素值
+      const percentage = parseInt(propHeight.replace('%', '')) / 100
+      height = screenHeight * percentage
+    } else if (propHeight && typeof propHeight === 'number') {
+      // 如果传入的是数字（像素值）
+      height = propHeight
+    } else {
+      // 默认使用屏幕高度的 98%
+      height = screenHeight * 0.98
+    }
 
     setCanvasWidth(width)
     setCanvasHeight(height)
@@ -44,6 +55,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
       canvasId,
       screenWidth,
       screenHeight,
+      propHeight,
       chartWidth: width,
       chartHeight: height,
       aspectRatio: width / height

@@ -23,23 +23,59 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
     }
 
     const initChart = () => {
-      const query = Taro.createSelectorQuery()
-      query.select(`#${canvasId}`)
-        .fields({ node: true, size: true })
+      // 先查询容器尺寸
+      const containerQuery = Taro.createSelectorQuery()
+      containerQuery.select(`#chart-container-${canvasId}`)
+        .fields({ size: true })
         .exec((res: any) => {
+          let containerWidth = 0
+          let containerHeight = height
+
           if (res && res[0]) {
-            const { node: canvas, width, height } = res[0]
-            canvasRef.current = canvas
-
-            const dpr = Taro.getSystemInfoSync().pixelRatio || 1
-            canvas.width = width * dpr
-            canvas.height = height * dpr
-
-            const ctx = canvas.getContext('2d')
-            ctx.scale(dpr, dpr)
-
-            drawChart(ctx, width, height)
+            containerWidth = res[0].width
+            containerHeight = res[0].height || height
+          } else {
+            // 降级方案：使用屏幕宽度
+            const systemInfo = Taro.getSystemInfoSync()
+            containerWidth = systemInfo.windowWidth
           }
+
+          console.log('SimpleLineChart: 容器尺寸', { containerWidth, containerHeight })
+
+          // 查询 Canvas 节点
+          const query = Taro.createSelectorQuery()
+          query.select(`#${canvasId}`)
+            .fields({ node: true, size: true })
+            .exec((res: any) => {
+              console.log('SimpleLineChart: Canvas 查询结果', res)
+
+              if (res && res[0]) {
+                const { node: canvas, width, height } = res[0]
+                console.log('SimpleLineChart: Canvas 信息', {
+                  canvas: canvas ? '[HTMLElement<canvas>]' : null,
+                  width,
+                  height
+                })
+
+                canvasRef.current = canvas
+
+                const dpr = Taro.getSystemInfoSync().pixelRatio || 1
+                const finalWidth = width || containerWidth
+                const finalHeight = height || containerHeight
+
+                console.log('SimpleLineChart: 最终使用尺寸', { finalWidth, finalHeight, dpr })
+
+                canvas.width = finalWidth * dpr
+                canvas.height = finalHeight * dpr
+
+                const ctx = canvas.getContext('2d')
+                ctx.scale(dpr, dpr)
+
+                drawChart(ctx, finalWidth, finalHeight)
+              } else {
+                console.error('SimpleLineChart: Canvas 查询失败', res)
+              }
+            })
         })
     }
 
@@ -49,15 +85,27 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
   const drawChart = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     if (!data || data.length === 0) return
 
+    console.log('SimpleLineChart: 开始绘制图表', { width, height, dataLength: data.length })
+
     const padding = { top: 20, right: 20, bottom: 40, left: 50 }
     const chartWidth = width - padding.left - padding.right
     const chartHeight = height - padding.top - padding.bottom
+
+    console.log('SimpleLineChart: 绘图区域', {
+      padding,
+      chartWidth,
+      chartHeight,
+      canvasWidth: width,
+      canvasHeight: height
+    })
 
     // 计算数据范围
     const allPrices = data.flatMap(item => [item.gas92, item.gas95, item.gas98, item.diesel0])
     const minPrice = Math.min(...allPrices)
     const maxPrice = Math.max(...allPrices)
     const priceRange = maxPrice - minPrice || 1
+
+    console.log('SimpleLineChart: 数据范围', { minPrice, maxPrice, priceRange })
 
     // 配置
     const series = [
@@ -142,12 +190,12 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
   }
 
   return (
-    <View id="chart-container" style={{ width: '100%', height: `${height}px` }}>
+    <View id={`chart-container-${canvasId}`} style={{ width: '100%', height: `${height}px`, backgroundColor: '#f5f5f5' }}>
       <Canvas
         id={canvasId}
         type="2d"
         canvasId={canvasId}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', backgroundColor: '#ffffff' }}
       />
     </View>
   )

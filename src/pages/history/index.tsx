@@ -1,5 +1,5 @@
 import { View, Text, ScrollView } from '@tarojs/components'
-import { useLoad } from '@tarojs/taro'
+import Taro, { useLoad } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import SimpleLineChart from '@/components/SimpleLineChart'
@@ -14,6 +14,8 @@ interface HistoryPriceData {
   change: number
 }
 
+const HISTORY_CACHE_KEY = 'oil_price_history_data'
+
 const HistoryPage = () => {
   const [loading, setLoading] = useState(true)
   const [historyData, setHistoryData] = useState<HistoryPriceData[]>([])
@@ -26,9 +28,47 @@ const HistoryPage = () => {
     { label: '全部', value: 20 },
   ]
 
+  // 从本地缓存加载历史数据
+  const loadHistoryFromCache = async (): Promise<HistoryPriceData[] | null> => {
+    try {
+      const res = await Taro.getStorage({ key: HISTORY_CACHE_KEY })
+      if (res.data) {
+        console.log('从缓存加载历史价格数据:', res.data)
+        return JSON.parse(res.data) as HistoryPriceData[]
+      }
+    } catch (error) {
+      console.log('未找到缓存数据:', error)
+    }
+    return null
+  }
+
+  // 保存历史数据到本地缓存
+  const saveHistoryToCache = async (data: HistoryPriceData[]) => {
+    try {
+      await Taro.setStorage({
+        key: HISTORY_CACHE_KEY,
+        data: JSON.stringify(data)
+      })
+      console.log('历史价格数据已保存到缓存')
+    } catch (error) {
+      console.error('保存历史价格数据到缓存失败:', error)
+    }
+  }
+
   const loadHistoryData = async (count: number) => {
     try {
       setLoading(true)
+
+      // 先从缓存加载
+      const cachedData = await loadHistoryFromCache()
+      if (cachedData && cachedData.length > 0) {
+        const sortedData = [...cachedData].sort((a, b) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime()
+        })
+        setHistoryData(sortedData)
+      }
+
+      // 然后请求最新数据
       const res = await Network.request({
         url: '/api/oil-price/history',
         method: 'GET',
@@ -40,6 +80,9 @@ const HistoryPage = () => {
           return new Date(a.date).getTime() - new Date(b.date).getTime()
         })
         setHistoryData(sortedData)
+
+        // 保存到缓存
+        await saveHistoryToCache(res.data.data)
       }
     } catch (error) {
       console.error('获取历史价格数据失败:', error)

@@ -6,6 +6,11 @@ export default defineAppConfig({
     'pages/notice/index',
     'pages/tips/index'
   ],
+  permission: {
+    'scope.userLocation': {
+      desc: '你的位置信息将用于获取所在省份的油价信息'
+    }
+  },
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',

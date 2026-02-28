@@ -57,7 +57,9 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             })
 
             // 初始化图表
-            initChart(width, height)
+            setTimeout(() => {
+              initChart(width, height)
+            }, 100)
           } else {
             console.error('UCharts: 无法获取容器尺寸，使用屏幕尺寸')
             // 降级方案：使用屏幕尺寸
@@ -65,10 +67,12 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             const height = screenHeight * 0.65
             setCanvasWidth(width)
             setCanvasHeight(height)
-            initChart(width, height)
+            setTimeout(() => {
+              initChart(width, height)
+            }, 100)
           }
         })
-    }, 300)
+    }, 500)
 
     return () => {
       // 清理图表实例

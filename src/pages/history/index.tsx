@@ -5,6 +5,8 @@ import { Network } from '@/network'
 import PriceChart from '@/components/PriceChart'
 import './index.css'
 
+const isH5 = process.env.TARO_ENV === 'h5'
+
 interface HistoryPriceData {
   date: string
   gas92: number
@@ -17,7 +19,7 @@ interface HistoryPriceData {
 const HistoryPage = () => {
   const [loading, setLoading] = useState(true)
   const [historyData, setHistoryData] = useState<HistoryPriceData[]>([])
-  const [selectedRange, setSelectedRange] = useState(7) // 默认7天
+  const [selectedRange, setSelectedRange] = useState(7)
 
   const timeRanges = [
     { label: '近5次', value: 5 },
@@ -26,29 +28,20 @@ const HistoryPage = () => {
     { label: '全部', value: 20 },
   ]
 
-  // 加载历史价格数据
   const loadHistoryData = async (count: number) => {
     try {
       setLoading(true)
-      console.log('开始获取历史价格数据，调价次数:', count)
-
       const res = await Network.request({
         url: '/api/oil-price/history',
         method: 'GET',
         data: { count }
       })
 
-      console.log('历史价格数据响应:', res.data)
-
       if (res.data?.code === 200 && res.data?.data) {
-        // 按日期倒序排序（由近及远）
         const sortedData = [...res.data.data].sort((a, b) => {
           return new Date(b.date).getTime() - new Date(a.date).getTime()
         })
         setHistoryData(sortedData)
-        console.log('历史价格数据解析成功（已按日期倒排）:', sortedData)
-      } else {
-        console.error('历史价格数据格式错误:', res.data)
       }
     } catch (error) {
       console.error('获取历史价格数据失败:', error)
@@ -57,20 +50,17 @@ const HistoryPage = () => {
     }
   }
 
-  // 切换时间范围
   const handleRangeChange = (range: number) => {
     setSelectedRange(range)
     loadHistoryData(range)
   }
 
-  // 获取涨跌幅颜色
   const getChangeColor = (change: number) => {
     if (change > 0) return 'text-red-500'
     if (change < 0) return 'text-green-500'
     return 'text-gray-500'
   }
 
-  // 获取涨跌幅显示
   const getChangeDisplay = (change: number) => {
     if (change > 0) {
       return `↑ ${Math.abs(change).toFixed(3)}`
@@ -81,12 +71,11 @@ const HistoryPage = () => {
   }
 
   useLoad(() => {
-    console.log('历史价格页面加载')
     loadHistoryData(selectedRange)
   })
 
-  return (
-    <ScrollView scrollY className="w-full h-screen bg-white">
+  const renderContent = () => (
+    <>
       {/* 页面标题和筛选器 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-10 bg-opacity-95">
         <View className="flex flex-row justify-between items-center mb-3">
@@ -109,7 +98,7 @@ const HistoryPage = () => {
         </View>
       </View>
 
-      {/* 走势图区域 - 固定高度 400px，最小化 padding */}
+      {/* 走势图区域 - 固定高度 400px */}
       <View className="w-full px-2 py-3">
         {historyData.length > 0 && (
           <>
@@ -132,14 +121,12 @@ const HistoryPage = () => {
 
       {/* 主要内容区域 */}
       <View className="px-4 py-3 pb-8">
-        {/* 加载状态 */}
         {loading && (
           <View className="flex items-center justify-center py-12">
             <Text className="text-sm text-gray-500">加载中...</Text>
           </View>
         )}
 
-        {/* 历史价格列表 */}
         {!loading && historyData.length > 0 && (
           <View>
             <Text className="block text-base font-semibold mb-3 text-gray-900">价格记录</Text>
@@ -179,7 +166,6 @@ const HistoryPage = () => {
           </View>
         )}
 
-        {/* 空状态 */}
         {!loading && historyData.length === 0 && (
           <View className="flex flex-col items-center justify-center py-12">
             <Text className="block text-3xl mb-3">📭</Text>
@@ -192,7 +178,21 @@ const HistoryPage = () => {
           </View>
         )}
       </View>
-    </ScrollView>
+    </>
+  )
+
+  return (
+    <View style={{ minHeight: '100vh' }}>
+      {isH5 ? (
+        <ScrollView scrollY className="w-full h-screen bg-white">
+          {renderContent()}
+        </ScrollView>
+      ) : (
+        <ScrollView scrollY className="w-full h-screen bg-white">
+          {renderContent()}
+        </ScrollView>
+      )}
+    </View>
   )
 }
 

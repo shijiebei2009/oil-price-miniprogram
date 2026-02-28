@@ -4,6 +4,7 @@ import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { OilPriceModule } from './oil-price/oil-price.module';
 import { LocationModule } from './location/location.module';
+import { SubscriptionMessageModule } from './subscription-message/subscription-message.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { LocationModule } from './location/location.module';
     }),
     OilPriceModule,
     LocationModule,
+    SubscriptionMessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

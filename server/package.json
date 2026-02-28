@@ -23,6 +23,8 @@
     "axios": "^1.13.6",
     "coze-coding-dev-sdk": "^0.7.16",
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.8.3",
     "express": "5.2.1",
     "rxjs": "^7.8.1",
     "zod": "^4.3.5"

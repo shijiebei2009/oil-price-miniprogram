@@ -1,12 +1,81 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad, showToast } from '@tarojs/taro'
+import { useLoad, showToast, requestSubscribeMessage, login } from '@tarojs/taro'
 import { useState } from 'react'
+import { Network } from '@/network'
 import './index.css'
 
 const NoticePage = () => {
   const [noticeEnabled, setNoticeEnabled] = useState(false)
   const [adjustmentNoticeEnabled, setAdjustmentNoticeEnabled] = useState(false)
   const [priceChangeNoticeEnabled, setPriceChangeNoticeEnabled] = useState(false)
+  const [openid, setOpenid] = useState<string>('')
+  const [province, setProvince] = useState<string>('')
+  const [city, setCity] = useState<string>('')
+
+  // 获取用户 openid
+  const getOpenid = async () => {
+    try {
+      const loginRes = await login()
+      console.log('登录成功，code:', loginRes.code)
+
+      // TODO: 调用后端接口用 code 换取 openid
+      // 暂时使用模拟的 openid
+      const mockOpenid = `mock_${Date.now()}`
+      setOpenid(mockOpenid)
+      return mockOpenid
+    } catch (error) {
+      console.error('获取 openid 失败:', error)
+      showToast({
+        title: '获取用户信息失败',
+        icon: 'none'
+      })
+      return null
+    }
+  }
+
+  // 保存订阅记录到后端
+  const saveSubscription = async (scene: string) => {
+    try {
+      const currentOpenid = openid || await getOpenid()
+      if (!currentOpenid) {
+        return false
+      }
+
+      // TODO: 从配置中获取真实的 template_id
+      const templateId = 'your_template_id_here'
+
+      const result = await Network.request({
+        url: '/api/subscription-message',
+        method: 'POST',
+        data: {
+          openid: currentOpenid,
+          templateId,
+          scene,
+          province,
+          city,
+        }
+      })
+
+      console.log('保存订阅结果:', result.data)
+
+      if (result.data.code === 200) {
+        return true
+      } else {
+        showToast({
+          title: result.data.msg || '订阅失败',
+          icon: 'none'
+        })
+        return false
+      }
+    } catch (error) {
+      console.error('保存订阅失败:', error)
+      showToast({
+        title: '订阅失败，请重试',
+        icon: 'none'
+      })
+      return false
+    }
+  }
 
   // 切换总开关
   const handleToggleNotice = () => {
@@ -25,7 +94,7 @@ const NoticePage = () => {
   }
 
   // 切换调价通知
-  const handleToggleAdjustmentNotice = () => {
+  const handleToggleAdjustmentNotice = async () => {
     if (!noticeEnabled) {
       showToast({
         title: '请先开启总通知开关',
@@ -33,15 +102,61 @@ const NoticePage = () => {
       })
       return
     }
-    setAdjustmentNoticeEnabled(!adjustmentNoticeEnabled)
-    showToast({
-      title: !adjustmentNoticeEnabled ? '已开启调价提醒' : '已关闭调价提醒',
-      icon: 'success'
-    })
+
+    // 如果关闭，直接更新状态
+    if (adjustmentNoticeEnabled) {
+      setAdjustmentNoticeEnabled(false)
+      showToast({
+        title: '已关闭调价提醒',
+        icon: 'success'
+      })
+      return
+    }
+
+    // 如果开启，需要请求订阅权限
+    try {
+      // TODO: 从配置中获取真实的 template_id
+      const templateId = 'your_template_id_here'
+
+      const subscribeRes = await requestSubscribeMessage({
+        tmplIds: [templateId]
+      } as any)
+
+      console.log('订阅权限结果:', subscribeRes)
+
+      // 检查是否授权成功
+      if (subscribeRes[templateId] === 'accept') {
+        // 保存订阅记录到后端
+        const success = await saveSubscription('price_change')
+        if (success) {
+          setAdjustmentNoticeEnabled(true)
+          showToast({
+            title: '已开启调价提醒',
+            icon: 'success'
+          })
+        }
+      } else if (subscribeRes[templateId] === 'reject') {
+        showToast({
+          title: '您已拒绝订阅授权',
+          icon: 'none'
+        })
+      } else if (subscribeRes[templateId] === 'ban') {
+        showToast({
+          title: '您已永久拒绝订阅，请在微信设置中开启',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('请求订阅权限失败:', error)
+      showToast({
+        title: '请求订阅失败，请重试',
+        icon: 'none'
+      })
+    }
   }
 
-  // 切换价格变动通知
-  const handleTogglePriceChangeNotice = () => {
+  // 切换价格变动提醒
+  const handleTogglePriceChangeNotice = async () => {
     if (!noticeEnabled) {
       showToast({
         title: '请先开启总通知开关',
@@ -49,15 +164,68 @@ const NoticePage = () => {
       })
       return
     }
-    setPriceChangeNoticeEnabled(!priceChangeNoticeEnabled)
-    showToast({
-      title: !priceChangeNoticeEnabled ? '已开启价格变动提醒' : '已关闭价格变动提醒',
-      icon: 'success'
-    })
+
+    // 如果关闭，直接更新状态
+    if (priceChangeNoticeEnabled) {
+      setPriceChangeNoticeEnabled(false)
+      showToast({
+        title: '已关闭价格变动提醒',
+        icon: 'success'
+      })
+      return
+    }
+
+    // 如果开启，需要请求订阅权限
+    try {
+      // TODO: 从配置中获取真实的 template_id
+      const templateId = 'your_template_id_here'
+
+      const subscribeRes = await requestSubscribeMessage({
+        tmplIds: [templateId]
+      } as any)
+
+      console.log('订阅权限结果:', subscribeRes)
+
+      // 检查是否授权成功
+      if (subscribeRes[templateId] === 'accept') {
+        // 保存订阅记录到后端
+        const success = await saveSubscription('price_alert')
+        if (success) {
+          setPriceChangeNoticeEnabled(true)
+          showToast({
+            title: '已开启价格变动提醒',
+            icon: 'success'
+          })
+        }
+      } else if (subscribeRes[templateId] === 'reject') {
+        showToast({
+          title: '您已拒绝订阅授权',
+          icon: 'none'
+        })
+      } else if (subscribeRes[templateId] === 'ban') {
+        showToast({
+          title: '您已永久拒绝订阅，请在微信设置中开启',
+          icon: 'none'
+        })
+      }
+    } catch (error) {
+      console.error('请求订阅权限失败:', error)
+      showToast({
+        title: '请求订阅失败，请重试',
+        icon: 'none'
+      })
+    }
   }
 
   useLoad(() => {
     console.log('通知设置页面加载')
+
+    // TODO: 从本地存储或后端获取用户的城市信息
+    setProvince('北京市')
+    setCity('北京')
+
+    // TODO: 从后端查询用户当前的订阅状态
+    getOpenid()
   })
 
   return (

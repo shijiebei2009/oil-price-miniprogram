@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import Taro, { useLoad, useDidShow, navigateTo } from '@tarojs/taro'
+import Taro, { useLoad, useDidShow, useShareAppMessage, useShareTimeline, navigateTo } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import CityPicker from '@/components/CityPicker'
@@ -142,6 +142,24 @@ const IndexPage = () => {
     loadPriceData(currentCity)
   })
 
+  // 配置分享给好友
+  useShareAppMessage(() => {
+    return {
+      title: `${currentCity}最新油价查询`,
+      path: '/pages/index/index',
+      imageUrl: ''
+    }
+  })
+
+  // 配置分享到朋友圈
+  useShareTimeline(() => {
+    return {
+      title: '油价查询小程序 - 实时油价查询',
+      query: '',
+      imageUrl: ''
+    }
+  })
+
   // 获取调价方向的显示
   const getAdjustmentDirection = (direction: string) => {
     switch (direction) {
@@ -205,10 +223,13 @@ const IndexPage = () => {
   const handleShare = async () => {
     const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
 
-    // 小程序端：调用分享
+    // 小程序端：显示提示
     if (isWeapp) {
-      await Taro.showShareMenu({
-        withShareTicket: true
+      await Taro.showModal({
+        title: '分享提示',
+        content: '请点击右上角 "..." 按钮，选择"转发给朋友"或"分享到朋友圈"',
+        showCancel: false,
+        confirmText: '知道了'
       })
       return
     }

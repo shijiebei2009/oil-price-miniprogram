@@ -4,7 +4,8 @@ export default defineAppConfig({
     'pages/history/index',
     'pages/city/index',
     'pages/notice/index',
-    'pages/tips/index'
+    'pages/tips/index',
+    'pages/rank/index'
   ],
   permission: {
     'scope.userLocation': {

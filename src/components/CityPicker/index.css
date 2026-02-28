@@ -106,9 +106,10 @@
 }
 
 .city-group-title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 28px;
+  font-weight: 700;
   color: #333;
+  letter-spacing: 1px;
 }
 
 .city-item {

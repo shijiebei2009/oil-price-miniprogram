@@ -180,13 +180,6 @@ const IndexPage = () => {
     })
   }
 
-  // 导航到城市对比页面
-  const navigateToCityCompare = () => {
-    navigateTo({
-      url: '/pages/city/index'
-    })
-  }
-
   // 导航到通知设置页面
   const navigateToNotice = () => {
     navigateTo({
@@ -198,6 +191,13 @@ const IndexPage = () => {
   const navigateToTips = () => {
     navigateTo({
       url: '/pages/tips/index'
+    })
+  }
+
+  // 导航到全国排名页面
+  const navigateToRank = () => {
+    navigateTo({
+      url: '/pages/rank/index'
     })
   }
 
@@ -368,11 +368,11 @@ const IndexPage = () => {
                 </View>
                 <View
                   className="bg-purple-50 rounded-xl p-4 flex flex-col items-center"
-                  onClick={navigateToCityCompare}
+                  onClick={navigateToRank}
                 >
-                  <Text className="text-2xl mb-2">🌍</Text>
-                  <Text className="text-sm font-semibold text-gray-900">多城市对比</Text>
-                  <Text className="text-xs text-gray-500 mt-1">查看差异</Text>
+                  <Text className="text-2xl mb-2">🏆</Text>
+                  <Text className="text-sm font-semibold text-gray-900">全国排名</Text>
+                  <Text className="text-xs text-gray-500 mt-1">油价对比</Text>
                 </View>
                 <View
                   className="bg-orange-50 rounded-xl p-4 flex flex-col items-center"

@@ -109,12 +109,12 @@ const HistoryPage = () => {
         </View>
       </View>
 
-      {/* 走势图区域 - 固定高度 400px */}
-      <View className="w-full px-4 py-3">
+      {/* 走势图区域 - 固定高度 400px，最小化 padding */}
+      <View className="w-full px-2 py-3">
         {historyData.length > 0 && (
           <>
             {console.log('渲染走势图，数据长度:', historyData.length, '示例数据:', historyData[0])}
-            <View className="bg-gray-50 rounded-xl p-4">
+            <View className="bg-gray-50 rounded-xl p-2">
               <PriceChart
                 data={historyData.map((item) => ({
                   date: item.date,

@@ -152,7 +152,7 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [8, 0, 8, 45],  // padding：顶8，右0，底8，左45（适应14px字体）
+            padding: [8, 0, 8, 40],  // padding：顶8，右0，底8，左40（优化宽度）
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],

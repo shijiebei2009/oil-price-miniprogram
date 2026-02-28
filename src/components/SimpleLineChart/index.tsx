@@ -45,10 +45,10 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
 
     // 配置
     const series = [
-      { key: 'gas92', color: '#1890ff', name: '92#汽油' },
-      { key: 'gas95', color: '#52c41a', name: '95#汽油' },
-      { key: 'gas98', color: '#faad14', name: '98#汽油' },
-      { key: 'diesel0', color: '#8c8c8c', name: '0#柴油' }
+      { key: 'gas92', color: '#f59e0b', name: '92#汽油' },
+      { key: 'gas95', color: '#3b82f6', name: '95#汽油' },
+      { key: 'gas98', color: '#8b5cf6', name: '98#汽油' },
+      { key: 'diesel0', color: '#10b981', name: '0#柴油' }
     ]
 
     // 绘制 Y 轴

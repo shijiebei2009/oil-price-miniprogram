@@ -124,22 +124,22 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             {
               name: '92#汽油',
               data: data.map(item => item.gas92),
-              color: '#1890ff'
+              color: '#f59e0b'
             },
             {
               name: '95#汽油',
               data: data.map(item => item.gas95),
-              color: '#52c41a'
+              color: '#3b82f6'
             },
             {
               name: '98#汽油',
               data: data.map(item => item.gas98),
-              color: '#faad14'
+              color: '#8b5cf6'
             },
             {
               name: '0#柴油',
               data: data.map(item => item.diesel0),
-              color: '#8c8c8c'
+              color: '#10b981'
             }
           ]
 

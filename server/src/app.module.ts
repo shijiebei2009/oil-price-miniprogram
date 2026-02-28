@@ -5,6 +5,7 @@ import { AppService } from '@/app.service';
 import { OilPriceModule } from './oil-price/oil-price.module';
 import { LocationModule } from './location/location.module';
 import { SubscriptionMessageModule } from './subscription-message/subscription-message.module';
+import { WechatModule } from './wechat/wechat.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { SubscriptionMessageModule } from './subscription-message/subscription-m
     OilPriceModule,
     LocationModule,
     SubscriptionMessageModule,
+    WechatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

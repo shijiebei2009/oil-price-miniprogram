@@ -41,8 +41,8 @@ const NoticePage = () => {
         return false
       }
 
-      // TODO: 从配置中获取真实的 template_id
-      const templateId = 'your_template_id_here'
+      // 微信订阅消息模板ID
+      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
 
       const result = await Network.request({
         url: '/api/subscription-message',
@@ -115,8 +115,8 @@ const NoticePage = () => {
 
     // 如果开启，需要请求订阅权限
     try {
-      // TODO: 从配置中获取真实的 template_id
-      const templateId = 'your_template_id_here'
+      // 微信订阅消息模板ID
+      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
 
       const subscribeRes = await requestSubscribeMessage({
         tmplIds: [templateId]
@@ -177,8 +177,8 @@ const NoticePage = () => {
 
     // 如果开启，需要请求订阅权限
     try {
-      // TODO: 从配置中获取真实的 template_id
-      const templateId = 'your_template_id_here'
+      // 微信订阅消息模板ID
+      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
 
       const subscribeRes = await requestSubscribeMessage({
         tmplIds: [templateId]

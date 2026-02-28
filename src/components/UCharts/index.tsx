@@ -124,22 +124,22 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             {
               name: '92#汽油',
               data: data.map(item => item.gas92),
-              color: '#f59e0b'
+              color: '#ff6b35'
             },
             {
               name: '95#汽油',
               data: data.map(item => item.gas95),
-              color: '#3b82f6'
+              color: '#4facfe'
             },
             {
               name: '98#汽油',
               data: data.map(item => item.gas98),
-              color: '#8b5cf6'
+              color: '#a18cd1'
             },
             {
               name: '0#柴油',
               data: data.map(item => item.diesel0),
-              color: '#10b981'
+              color: '#00d2ff'
             }
           ]
 
@@ -169,7 +169,7 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
             padding: [8, 0, 8, 35],  // padding：顶8，右0，底8，左35（减少左侧占用）
             animation: false,  // 禁用动画，避免错误
             background: '#FFFFFF',
-            color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
+            color: ['#ff6b35', '#4facfe', '#a18cd1', '#00d2ff'],
             categories,
             series,
             xAxis: {

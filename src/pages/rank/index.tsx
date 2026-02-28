@@ -20,10 +20,10 @@ const RankPage = () => {
   const [selectedOilType, setSelectedOilType] = useState<OilType>('gas92')
 
   const oilTypeOptions = [
-    { key: 'gas92' as OilType, label: '92#', color: '#f59e0b' },
-    { key: 'gas95' as OilType, label: '95#', color: '#3b82f6' },
-    { key: 'gas98' as OilType, label: '98#', color: '#8b5cf6' },
-    { key: 'diesel0' as OilType, label: '柴油', color: '#10b981' },
+    { key: 'gas92' as OilType, label: '92#', color: '#ff6b35' },
+    { key: 'gas95' as OilType, label: '95#', color: '#4facfe' },
+    { key: 'gas98' as OilType, label: '98#', color: '#a18cd1' },
+    { key: 'diesel0' as OilType, label: '柴油', color: '#00d2ff' },
   ]
 
   // 加载全国油价数据
@@ -72,10 +72,10 @@ const RankPage = () => {
   // 获取油品颜色
   const getOilTypeColor = (type: OilType) => {
     const map: Record<OilType, string> = {
-      gas92: '#f59e0b',
-      gas95: '#3b82f6',
-      gas98: '#8b5cf6',
-      diesel0: '#10b981'
+      gas92: '#ff6b35',
+      gas95: '#4facfe',
+      gas98: '#a18cd1',
+      diesel0: '#00d2ff'
     }
     return map[type]
   }

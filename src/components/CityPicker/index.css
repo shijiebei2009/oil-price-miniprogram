@@ -135,20 +135,20 @@
 }
 
 .city-name {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .city-price-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 10px 14px;
 }
 
 .city-price {
-  font-size: 20px;
+  font-size: 24px;
   color: #666;
 }
 

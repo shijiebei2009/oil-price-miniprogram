@@ -87,7 +87,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
 
     console.log('SimpleLineChart: 开始绘制图表', { width, height, dataLength: data.length })
 
-    const padding = { top: 20, right: 20, bottom: 40, left: 50 }
+    const padding = { top: 20, right: 20, bottom: 60, left: 50 }
     const chartWidth = width - padding.left - padding.right
     const chartHeight = height - padding.top - padding.bottom
 
@@ -174,16 +174,31 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({ data, height = 400 })
       })
     })
 
-    // 绘制 X 轴标签
+    // 绘制 X 轴标签（倾斜显示）
     ctx.fillStyle = '#666'
-    ctx.font = '12px Arial'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
+    ctx.font = '11px Arial'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
 
     data.forEach((item, index) => {
       const x = padding.left + (chartWidth / (data.length - 1)) * index
       const label = item.date.substring(5) // 只显示月-日
-      ctx.fillText(label, x, height - padding.bottom + 10)
+      const labelY = height - padding.bottom + 35
+
+      // 保存当前状态
+      ctx.save()
+
+      // 移动到标签位置
+      ctx.translate(x, labelY)
+
+      // 旋转 45 度（0.785 弧度）
+      ctx.rotate(-45 * Math.PI / 180)
+
+      // 绘制文本（向左偏移，因为旋转后文本向右延伸）
+      ctx.fillText(label, 0, 0)
+
+      // 恢复状态
+      ctx.restore()
     })
 
     console.log('SimpleLineChart: 图表绘制完成')

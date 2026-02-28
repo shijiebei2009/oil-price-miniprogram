@@ -136,7 +136,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [5, 2, 5, 25],
+            padding: [2, 0, 2, 20],  // 极小化 padding：顶2，右0，底2，左20
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -146,16 +146,15 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 10,
-              margin: 2,
+              fontSize: 9,
+              margin: 1,
               scrollAlign: 'left'
             },
             yAxis: {
-              gridType: 'dash',
-              dashLength: 2,
+              disableGrid: true,  // 隐藏网格线
               data: [{ min: yMin, max: yMax }],
-              fontSize: 10,
-              margin: 2,
+              fontSize: 9,
+              margin: 1,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
@@ -167,13 +166,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               }
             },
             legend: {
-              show: true,
-              position: 'top',
-              padding: 2,
-              margin: 0,
-              fontSize: 10,
-              lineHeight: 10,
-              float: 'center'
+              show: false  // 隐藏图例，释放顶部空间
             },
             tooltip: {
               show: true,

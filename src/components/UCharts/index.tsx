@@ -33,8 +33,8 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
     // 计算合理的图表尺寸
     // 宽度：全屏宽度，减少最小 padding（8px * 2 = 16px）
     const width = screenWidth - 16
-    // 高度：使用屏幕高度的 90%，让图表占满屏幕
-    const height = screenHeight * 0.9
+    // 高度：使用屏幕高度的 98%，让图表几乎占满整个屏幕
+    const height = screenHeight * 0.98
 
     setCanvasWidth(width)
     setCanvasHeight(height)

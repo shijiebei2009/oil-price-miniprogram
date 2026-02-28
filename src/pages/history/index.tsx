@@ -87,18 +87,18 @@ const HistoryPage = () => {
 
   return (
     <View className="w-full min-h-screen bg-white">
-      {/* 页面标题和筛选器 - 合并为一行 */}
-      <View className="bg-white px-3 py-1.5 border-b border-gray-100 flex flex-row justify-between items-center">
-        <Text className="text-sm font-bold text-gray-900">历史价格</Text>
-        <View className="flex flex-row gap-1">
+      {/* 页面标题和筛选器 - 极简一行 */}
+      <View className="bg-white px-2 py-1 border-b border-gray-50 flex flex-row justify-between items-center">
+        <Text className="text-xs font-semibold text-gray-700">历史价格</Text>
+        <View className="flex flex-row gap-0.5">
           {timeRanges.map((range, index) => (
             <View
               key={index}
-              className={`rounded px-2 py-0.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-100'}`}
+              className={`rounded px-1.5 py-0.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-50'}`}
               onClick={() => handleRangeChange(range.value)}
             >
               <Text
-                className={`text-xs ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
+                className={`text-[10px] ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
               >
                 {range.label}
               </Text>
@@ -107,7 +107,7 @@ const HistoryPage = () => {
         </View>
       </View>
 
-      {/* 走势图区域 - 无 padding */}
+      {/* 走势图区域 - 无任何 padding */}
       <View>
         {historyData.length > 0 && (
           <>

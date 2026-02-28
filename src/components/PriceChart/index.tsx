@@ -29,7 +29,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {
   return (
     <View className="price-chart" style={{ width: '100%', height: height || 'auto' }}>
       {/* 图表区域 */}
-      <View className="chart-container" style={{ width: '100%', height: '100%' }}>
+      <View id="chart-container" className="chart-container" style={{ width: '100%', height: '100%' }}>
         <UCharts data={data} height={height} />
       </View>
     </View>

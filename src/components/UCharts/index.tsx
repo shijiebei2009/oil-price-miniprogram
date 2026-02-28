@@ -30,41 +30,46 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
     const screenWidth = systemInfo.windowWidth
     const screenHeight = systemInfo.windowHeight
 
-    // 计算合理的图表尺寸
-    // 宽度：全屏宽度，减少最小 padding（8px * 2 = 16px）
-    const width = screenWidth - 16
-    // 高度：优先使用外部传入的 height（百分比），否则使用屏幕高度的 98%
-    let height: number
-    if (propHeight && typeof propHeight === 'string' && propHeight.includes('%')) {
-      // 如果传入的是百分比（如 "100%"），计算实际像素值
-      const percentage = parseInt(propHeight.replace('%', '')) / 100
-      height = screenHeight * percentage
-    } else if (propHeight && typeof propHeight === 'number') {
-      // 如果传入的是数字（像素值）
-      height = propHeight
-    } else {
-      // 默认使用屏幕高度的 98%
-      height = screenHeight * 0.98
-    }
-
-    setCanvasWidth(width)
-    setCanvasHeight(height)
-
-    console.log('UCharts: 初始化图表', {
-      dataLength: data.length,
-      canvasId,
-      screenWidth,
-      screenHeight,
-      propHeight,
-      chartWidth: width,
-      chartHeight: height,
-      aspectRatio: width / height
-    })
-
-    // 延迟初始化，确保 Canvas 渲染完成
+    // 延迟初始化，确保容器已经渲染完成
     setTimeout(() => {
-      initChart(width, height)
-    }, 200)
+      // 获取容器的实际尺寸
+      const query = Taro.createSelectorQuery()
+      query.select(`#chart-container`)
+        .fields({ size: true })
+        .exec((res: any) => {
+          if (res && res[0]) {
+            const { width: containerWidth, height: containerHeight } = res[0]
+
+            // 使用容器的实际尺寸
+            const width = containerWidth
+            const height = containerHeight
+
+            setCanvasWidth(width)
+            setCanvasHeight(height)
+
+            console.log('UCharts: 获取容器尺寸', {
+              dataLength: data.length,
+              canvasId,
+              containerWidth,
+              containerHeight,
+              chartWidth: width,
+              chartHeight: height,
+              aspectRatio: width / height
+            })
+
+            // 初始化图表
+            initChart(width, height)
+          } else {
+            console.error('UCharts: 无法获取容器尺寸，使用屏幕尺寸')
+            // 降级方案：使用屏幕尺寸
+            const width = screenWidth
+            const height = screenHeight * 0.65
+            setCanvasWidth(width)
+            setCanvasHeight(height)
+            initChart(width, height)
+          }
+        })
+    }, 300)
 
     return () => {
       // 清理图表实例
@@ -157,7 +162,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             xAxis: {
               disableGrid: true,
               itemCount: data.length,
-              labelCount: data.length,
+              labelCount: Math.min(6, data.length),  // 最多显示 6 个标签，避免挤在一起
               fontSize: 14,  // 与价格记录字体大小一致
               margin: 8,
               scrollAlign: 'center'  // 改为居中，减少右侧留白

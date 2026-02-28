@@ -136,7 +136,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             width: width,
             height: height,
-            padding: [8, 5, 8, 32],
+            padding: [5, 2, 5, 25],
             animation: true,
             background: '#FFFFFF',
             color: ['#1890ff', '#52c41a', '#faad14', '#8c8c8c'],
@@ -146,16 +146,16 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
               disableGrid: true,
               itemCount: data.length,
               labelCount: data.length,
-              fontSize: 11,
-              margin: 3,
+              fontSize: 10,
+              margin: 2,
               scrollAlign: 'left'
             },
             yAxis: {
               gridType: 'dash',
               dashLength: 2,
               data: [{ min: yMin, max: yMax }],
-              fontSize: 11,
-              margin: 3,
+              fontSize: 10,
+              margin: 2,
               format: (val: number) => val.toFixed(2)
             },
             extra: {
@@ -169,10 +169,10 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             legend: {
               show: true,
               position: 'top',
-              padding: 3,
-              margin: 1,
-              fontSize: 11,
-              lineHeight: 12,
+              padding: 2,
+              margin: 0,
+              fontSize: 10,
+              lineHeight: 10,
               float: 'center'
             },
             tooltip: {
@@ -192,7 +192,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             canvasId: canvasId,
             context: ctx,
             type: option.type,
-            fontSize: 13,
+            fontSize: 10,  // 统一字体大小
             legend: option.legend,
             background: option.background,
             pixelRatio: dpr,
@@ -204,6 +204,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             dataLabel: false,
             width: width,
             height: height,
+            padding: option.padding,
             extra: option.extra
           })
 

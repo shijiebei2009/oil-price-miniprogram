@@ -892,38 +892,64 @@ export class OilPriceService {
 
     // 获取最新的历史数据作为参考
     const latestHistory = this.realHistoryData[0]
-    const previousHistory = this.realHistoryData[1]
 
-    // 计算涨跌（与上一周期相比）
-    const change92 = latestHistory ? latestHistory.change : 0
-    const change95 = latestHistory ? latestHistory.change * 1.06 : 0
-    const change98 = latestHistory ? latestHistory.change * 1.16 : 0
-    const change0 = latestHistory ? latestHistory.change * 0.96 : 0
+    // 计算previousPrice和change
+    // 逻辑：从当前价格倒推，使用历史数据的变化趋势
+    let previousPrice92, previousPrice95, previousPrice98, previousPrice0
+    let change92, change95, change98, change0
+
+    if (latestHistory) {
+      // 如果有历史数据，基于历史数据计算
+      // 假设当前价格比最后一次调价日期略有波动（±0.05）
+      const currentFluctuation = (Math.random() - 0.5) * 0.10
+
+      previousPrice92 = latestHistory.gas92 + currentFluctuation
+      previousPrice95 = latestHistory.gas95 + currentFluctuation
+      previousPrice98 = latestHistory.gas98 + currentFluctuation
+      previousPrice0 = latestHistory.diesel0 + currentFluctuation
+
+      change92 = provincePrice.gas92 - previousPrice92
+      change95 = provincePrice.gas95 - previousPrice95
+      change98 = provincePrice.gas98 - previousPrice98
+      change0 = provincePrice.diesel0 - previousPrice0
+    } else {
+      // 如果没有历史数据，使用模拟数据
+      // 假设上次调价是7天前，波动±0.15
+      change92 = (Math.random() - 0.5) * 0.30
+      change95 = change92 * 1.06
+      change98 = change92 * 1.16
+      change0 = change92 * 0.96
+
+      previousPrice92 = provincePrice.gas92 - change92
+      previousPrice95 = provincePrice.gas95 - change95
+      previousPrice98 = provincePrice.gas98 - change98
+      previousPrice0 = provincePrice.diesel0 - change0
+    }
 
     const currentPrices: OilPrice[] = [
       {
         name: '92号汽油',
         price: provincePrice.gas92,
-        previousPrice: provincePrice.gas92 - change92,
-        change: change92
+        previousPrice: parseFloat(previousPrice92.toFixed(2)),
+        change: parseFloat(change92.toFixed(3))
       },
       {
         name: '95号汽油',
         price: provincePrice.gas95,
-        previousPrice: provincePrice.gas95 - change95,
-        change: change95
+        previousPrice: parseFloat(previousPrice95.toFixed(2)),
+        change: parseFloat(change95.toFixed(3))
       },
       {
         name: '98号汽油',
         price: provincePrice.gas98,
-        previousPrice: provincePrice.gas98 - change98,
-        change: change98
+        previousPrice: parseFloat(previousPrice98.toFixed(2)),
+        change: parseFloat(change98.toFixed(3))
       },
       {
         name: '0号柴油',
         price: provincePrice.diesel0,
-        previousPrice: provincePrice.diesel0 - change0,
-        change: change0
+        previousPrice: parseFloat(previousPrice0.toFixed(2)),
+        change: parseFloat(change0.toFixed(3))
       },
     ]
 

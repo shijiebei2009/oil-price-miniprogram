@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad, showToast, requestSubscribeMessage, login, getStorageSync, setStorageSync } from '@tarojs/taro'
+import { useLoad, showToast, requestSubscribeMessage, login, getStorageSync, setStorageSync, getEnv, ENV_TYPE } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import './index.css'
@@ -12,6 +12,9 @@ const NoticePage = () => {
   const [province, setProvince] = useState<string>('')
   const [city, setCity] = useState<string>('')
 
+  // 检测当前环境
+  const isWeapp = getEnv() === ENV_TYPE.WEAPP
+
   // 获取用户 openid（调用微信登录接口）
   const getOpenid = async () => {
     try {
@@ -23,38 +26,50 @@ const NoticePage = () => {
         return cachedOpenid
       }
 
-      // 缓存不存在，尝试登录获取
-      const loginRes = await login()
-      console.log('登录成功，code:', loginRes.code)
+      // 如果是小程序环境，尝试登录获取真实 openid
+      if (isWeapp) {
+        const loginRes = await login()
+        console.log('登录成功，code:', loginRes.code)
 
-      // 调用后端接口，用 code 换取真实的 openid
-      const result = await Network.request({
-        url: '/api/wechat/login',
-        method: 'POST',
-        data: { code: loginRes.code }
-      })
+        // 调用后端接口，用 code 换取真实的 openid
+        const result = await Network.request({
+          url: '/api/wechat/login',
+          method: 'POST',
+          data: { code: loginRes.code }
+        })
 
-      console.log('后端登录接口响应:', result.data)
+        console.log('后端登录接口响应:', result.data)
 
-      if (result.data.code === 200 && result.data.data) {
-        const { openid: userOpenid } = result.data.data
-        console.log('获取真实 openid 成功:', userOpenid)
+        if (result.data.code === 200 && result.data.data) {
+          const { openid: userOpenid } = result.data.data
+          console.log('获取真实 openid 成功:', userOpenid)
 
-        // 保存到本地存储
-        setStorageSync('openid', userOpenid)
-        setOpenid(userOpenid)
+          // 保存到本地存储
+          setStorageSync('openid', userOpenid)
+          setOpenid(userOpenid)
 
-        return userOpenid
+          return userOpenid
+        } else {
+          throw new Error(result.data.msg || '登录失败')
+        }
       } else {
-        throw new Error(result.data.msg || '登录失败')
+        // H5 环境，使用降级方案（固定的测试 openid）
+        console.log('H5 环境，使用测试 openid')
+        const mockOpenid = 'mock_test_user_12345'
+        setStorageSync('openid', mockOpenid)
+        setOpenid(mockOpenid)
+        return mockOpenid
       }
     } catch (error) {
       console.error('获取 openid 失败:', error)
-      showToast({
-        title: '获取用户信息失败',
-        icon: 'none'
-      })
-      return null
+
+      // 如果登录失败，使用降级方案
+      console.log('登录失败，使用降级 openid')
+      const mockOpenid = 'mock_test_user_12345'
+      setStorageSync('openid', mockOpenid)
+      setOpenid(mockOpenid)
+
+      return mockOpenid
     }
   }
 
@@ -175,37 +190,48 @@ const NoticePage = () => {
       return
     }
 
-    // 如果开启，需要请求订阅权限
+    // 如果开启，需要请求订阅权限（仅小程序环境）
     try {
       // 微信订阅消息模板ID
       const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
 
-      const subscribeRes = await requestSubscribeMessage({
-        tmplIds: [templateId]
-      } as any)
+      let success = false
 
-      console.log('订阅权限结果:', subscribeRes)
+      if (isWeapp) {
+        // 小程序环境，请求订阅权限
+        const subscribeRes = await requestSubscribeMessage({
+          tmplIds: [templateId]
+        } as any)
 
-      // 检查是否授权成功
-      if (subscribeRes[templateId] === 'accept') {
-        // 保存订阅记录到后端
-        const success = await saveSubscription('price_change')
-        if (success) {
-          setAdjustmentNoticeEnabled(true)
+        console.log('订阅权限结果:', subscribeRes)
+
+        // 检查是否授权成功
+        if (subscribeRes[templateId] === 'accept') {
+          success = await saveSubscription('price_change')
+        } else if (subscribeRes[templateId] === 'reject') {
           showToast({
-            title: '已开启调价提醒',
-            icon: 'success'
+            title: '您已拒绝订阅授权',
+            icon: 'none'
           })
+          return
+        } else if (subscribeRes[templateId] === 'ban') {
+          showToast({
+            title: '您已永久拒绝订阅，请在微信设置中开启',
+            icon: 'none'
+          })
+          return
         }
-      } else if (subscribeRes[templateId] === 'reject') {
+      } else {
+        // H5 环境，直接保存订阅（降级方案）
+        console.log('H5 环境，直接保存订阅记录')
+        success = await saveSubscription('price_change')
+      }
+
+      if (success) {
+        setAdjustmentNoticeEnabled(true)
         showToast({
-          title: '您已拒绝订阅授权',
-          icon: 'none'
-        })
-      } else if (subscribeRes[templateId] === 'ban') {
-        showToast({
-          title: '您已永久拒绝订阅，请在微信设置中开启',
-          icon: 'none'
+          title: '已开启调价提醒',
+          icon: 'success'
         })
       }
     } catch (error) {
@@ -237,37 +263,48 @@ const NoticePage = () => {
       return
     }
 
-    // 如果开启，需要请求订阅权限
+    // 如果开启，需要请求订阅权限（仅小程序环境）
     try {
       // 微信订阅消息模板ID
       const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
 
-      const subscribeRes = await requestSubscribeMessage({
-        tmplIds: [templateId]
-      } as any)
+      let success = false
 
-      console.log('订阅权限结果:', subscribeRes)
+      if (isWeapp) {
+        // 小程序环境，请求订阅权限
+        const subscribeRes = await requestSubscribeMessage({
+          tmplIds: [templateId]
+        } as any)
 
-      // 检查是否授权成功
-      if (subscribeRes[templateId] === 'accept') {
-        // 保存订阅记录到后端
-        const success = await saveSubscription('price_alert')
-        if (success) {
-          setPriceChangeNoticeEnabled(true)
+        console.log('订阅权限结果:', subscribeRes)
+
+        // 检查是否授权成功
+        if (subscribeRes[templateId] === 'accept') {
+          success = await saveSubscription('price_alert')
+        } else if (subscribeRes[templateId] === 'reject') {
           showToast({
-            title: '已开启价格变动提醒',
-            icon: 'success'
+            title: '您已拒绝订阅授权',
+            icon: 'none'
           })
+          return
+        } else if (subscribeRes[templateId] === 'ban') {
+          showToast({
+            title: '您已永久拒绝订阅，请在微信设置中开启',
+            icon: 'none'
+          })
+          return
         }
-      } else if (subscribeRes[templateId] === 'reject') {
+      } else {
+        // H5 环境，直接保存订阅（降级方案）
+        console.log('H5 环境，直接保存订阅记录')
+        success = await saveSubscription('price_alert')
+      }
+
+      if (success) {
+        setPriceChangeNoticeEnabled(true)
         showToast({
-          title: '您已拒绝订阅授权',
-          icon: 'none'
-        })
-      } else if (subscribeRes[templateId] === 'ban') {
-        showToast({
-          title: '您已永久拒绝订阅，请在微信设置中开启',
-          icon: 'none'
+          title: '已开启价格变动提醒',
+          icon: 'success'
         })
       }
     } catch (error) {

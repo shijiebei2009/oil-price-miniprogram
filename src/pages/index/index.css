@@ -1,1 +1,15 @@
 /* 优先使用 tailwindcss，如无必要请不要使用css */
+
+/* 分享按钮跳动动画 */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+

@@ -198,6 +198,12 @@ const UCharts: React.FC<UChartsProps> = ({ data }) => {
                   return `${item.name}: ¥${item.data.toFixed(2)}/L`
                 }
               }
+            },
+            extra: {
+              line: {
+                type: 'curve',
+                width: 2
+              }
             }
           }
 

@@ -201,6 +201,32 @@ const IndexPage = () => {
     })
   }
 
+  // 处理分享按钮点击
+  const handleShare = async () => {
+    const isWeapp = Taro.getEnv() === Taro.ENV_TYPE.WEAPP
+
+    // 小程序端：调用分享
+    if (isWeapp) {
+      await Taro.showShareMenu({
+        withShareTicket: true
+      })
+      return
+    }
+
+    // H5端：复制分享文本
+    const shareText = `油价查询小程序\n\n${currentCity}最新油价：\n92#: ${priceData?.currentPrices[0]?.price.toFixed(2)}元/升\n95#: ${priceData?.currentPrices[1]?.price.toFixed(2)}元/升\n98#: ${priceData?.currentPrices[2]?.price.toFixed(2)}元/升\n柴油: ${priceData?.currentPrices[3]?.price.toFixed(2)}元/升\n\n下次调价：${priceData?.nextAdjustment?.date} ${priceData?.nextAdjustment?.direction === 'up' ? '预计上涨' : priceData?.nextAdjustment?.direction === 'down' ? '预计下降' : '预计稳定'}\n\n快来查查您所在地的油价吧！`
+
+    await Taro.setClipboardData({
+      data: shareText
+    })
+
+    await Taro.showToast({
+      title: '已复制分享文案',
+      icon: 'success',
+      duration: 2000
+    })
+  }
+
   return (
     <View className="w-full min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 顶部标题栏 - 渐变背景 */}
@@ -250,6 +276,44 @@ const IndexPage = () => {
                 ▼
               </Text>
             </View>
+          </View>
+        </View>
+      </View>
+
+      {/* 分享按钮区域 - 首屏 */}
+      <View className="mx-3 mt-3">
+        <View
+          className="rounded-2xl p-4 shadow-sm"
+          style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            animation: 'bounce 2s infinite'
+          }}
+          onClick={handleShare}
+        >
+          <View style={{ flex: 1 }}>
+            <Text className="block text-base font-bold text-white mb-1">
+              分享给好友
+            </Text>
+            <Text className="block text-xs text-white opacity-90">
+              让更多人了解实时油价
+            </Text>
+          </View>
+          <View
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Text style={{ fontSize: '24px' }}>🎁</Text>
           </View>
         </View>
       </View>

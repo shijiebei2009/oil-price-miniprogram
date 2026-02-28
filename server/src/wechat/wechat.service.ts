@@ -26,6 +26,14 @@ interface SendSubscribeMessageResponse {
   errmsg: string
 }
 
+interface JsCode2SessionResponse {
+  openid: string
+  session_key: string
+  unionid?: string
+  errcode?: number
+  errmsg?: string
+}
+
 @Injectable()
 export class WechatService {
   private readonly logger = new Logger(WechatService.name)
@@ -123,5 +131,36 @@ export class WechatService {
     }
 
     return this.sendSubscribeMessage(params)
+  }
+
+  /**
+   * 微信登录：用 code 换取 openid 和 session_key
+   */
+  async login(code: string): Promise<{ openid: string; session_key: string }> {
+    try {
+      const appId = this.configService.get<string>('WECHAT_APPID')
+      const appSecret = this.configService.get<string>('WECHAT_SECRET')
+
+      if (!appId || !appSecret) {
+        throw new Error('WECHAT_APPID 或 WECHAT_SECRET 未配置')
+      }
+
+      const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${appId}&secret=${appSecret}&js_code=${code}&grant_type=authorization_code`
+      const response = await axios.get<JsCode2SessionResponse>(url)
+
+      if (response.data.errcode) {
+        throw new Error(`微信登录失败: ${response.data.errcode} - ${response.data.errmsg}`)
+      }
+
+      this.logger.log(`✅ 微信登录成功: openid=${response.data.openid}`)
+
+      return {
+        openid: response.data.openid,
+        session_key: response.data.session_key
+      }
+    } catch (error) {
+      this.logger.error('微信登录失败:', error.message)
+      throw error
+    }
   }
 }

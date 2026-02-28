@@ -9,6 +9,32 @@ export class WechatController {
   constructor(private readonly wechatService: WechatService) {}
 
   /**
+   * 微信登录：用 code 换取 openid
+   */
+  @Post('login')
+  async login(@Body() body: { code: string }) {
+    const { code } = body
+
+    try {
+      const result = await this.wechatService.login(code)
+
+      return {
+        code: 200,
+        msg: 'success',
+        data: result
+      }
+    } catch (error) {
+      this.logger.error('登录失败:', error.message)
+
+      return {
+        code: 500,
+        msg: error.message || '登录失败',
+        data: null
+      }
+    }
+  }
+
+  /**
    * 手动发送订阅消息（用于测试）
    */
   @Post('send-subscribe')

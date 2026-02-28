@@ -12,7 +12,7 @@ const NoticePage = () => {
   const [province, setProvince] = useState<string>('')
   const [city, setCity] = useState<string>('')
 
-  // 获取用户 openid（使用本地缓存保持一致）
+  // 获取用户 openid（调用微信登录接口）
   const getOpenid = async () => {
     try {
       // 先从本地存储获取
@@ -27,12 +27,27 @@ const NoticePage = () => {
       const loginRes = await login()
       console.log('登录成功，code:', loginRes.code)
 
-      // TODO: 调用后端接口用 code 换取真实的 openid
-      // 暂时使用固定的测试 openid（确保一致性）
-      const mockOpenid = 'mock_test_user_12345'
-      setStorageSync('openid', mockOpenid)
-      setOpenid(mockOpenid)
-      return mockOpenid
+      // 调用后端接口，用 code 换取真实的 openid
+      const result = await Network.request({
+        url: '/api/wechat/login',
+        method: 'POST',
+        data: { code: loginRes.code }
+      })
+
+      console.log('后端登录接口响应:', result.data)
+
+      if (result.data.code === 200 && result.data.data) {
+        const { openid: userOpenid } = result.data.data
+        console.log('获取真实 openid 成功:', userOpenid)
+
+        // 保存到本地存储
+        setStorageSync('openid', userOpenid)
+        setOpenid(userOpenid)
+
+        return userOpenid
+      } else {
+        throw new Error(result.data.msg || '登录失败')
+      }
     } catch (error) {
       console.error('获取 openid 失败:', error)
       showToast({

@@ -11,10 +11,9 @@ interface UChartsProps {
     gas98: number
     diesel0: number
   }>
-  height?: number
 }
 
-const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
+const UCharts: React.FC<UChartsProps> = ({ data }) => {
   const [canvasId] = useState(`ucharts-${Date.now()}-${Math.floor(Math.random() * 10000)}`)
   const [canvasWidth, setCanvasWidth] = useState(0)
   const [canvasHeight, setCanvasHeight] = useState(0)
@@ -77,7 +76,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
         uChartsRef.current = null
       }
     }
-  }, [data, canvasId])
+  }, [data])
 
   const initChart = (width: number, height: number) => {
     const query = Taro.createSelectorQuery()
@@ -87,7 +86,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
         console.log('UCharts: Canvas 查询结果', res)
 
         if (res && res[0]) {
-          const { node: canvas, width: canvasW, height: canvasH } = res[0]
+          const { node: canvas } = res[0]
 
           if (!canvas) {
             console.error('UCharts: Canvas 节点不存在')

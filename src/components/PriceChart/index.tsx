@@ -10,7 +10,7 @@ interface PriceChartProps {
     gas98: number
     diesel0: number
   }>
-  height?: number
+  height?: number | string
 }
 
 const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {
@@ -30,7 +30,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {
     <View className="price-chart" style={{ width: '100%', height: height || 'auto' }}>
       {/* 图表区域 */}
       <View id="chart-container" className="chart-container" style={{ width: '100%', height: '100%' }}>
-        <UCharts data={data} height={height} />
+        <UCharts data={data} />
       </View>
     </View>
   )

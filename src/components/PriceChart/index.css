@@ -1,11 +1,13 @@
 /* 价格走势图组件样式 */
 .price-chart {
   width: 100%;
+  height: 100%;  /* 占满父容器高度 */
   background-color: #ffffff;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 24px;
+  border-radius: 0;  /* 移除圆角 */
+  padding: 0;  /* 移除 padding */
+  margin: 0;  /* 移除 margin */
   box-sizing: border-box;
+  overflow: hidden;  /* 防止溢出 */
 }
 
 .chart-toolbar {
@@ -18,10 +20,12 @@
 /* 图表容器 */
 .chart-container {
   width: 100%;
-  min-height: 300px;
+  height: 100%;  /* 占满父容器高度 */
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
+  padding: 0;  /* 移除 padding */
+  margin: 0;  /* 移除 margin */
 }
 
 /* 导出按钮样式 */

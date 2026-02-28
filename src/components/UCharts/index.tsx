@@ -88,6 +88,25 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
 
           // 准备数据
           const categories = data.map(item => item.date.substring(5)) // 只显示月-日
+
+          // 计算数据的最小值和最大值，动态设置 Y 轴范围
+          const allPrices = data.flatMap(item => [item.gas92, item.gas95, item.gas98, item.diesel0])
+          const minPrice = Math.min(...allPrices)
+          const maxPrice = Math.max(...allPrices)
+          const priceRange = maxPrice - minPrice
+
+          // Y 轴范围：数据范围 + 上下各留 10% 空间
+          const yMin = Math.max(0, minPrice - priceRange * 0.1)
+          const yMax = maxPrice + priceRange * 0.1
+
+          console.log('UCharts: Y 轴范围', {
+            minPrice,
+            maxPrice,
+            priceRange,
+            yMin,
+            yMax
+          })
+
           const series = [
             {
               name: '92#汽油',
@@ -134,7 +153,7 @@ const UCharts: React.FC<UChartsProps> = ({ data, height: propHeight }) => {
             yAxis: {
               gridType: 'dash',
               dashLength: 2,
-              data: [{ min: 0, max: 10 }],
+              data: [{ min: yMin, max: yMax }],
               fontSize: 11,
               margin: 3,
               format: (val: number) => val.toFixed(2)

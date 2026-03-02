@@ -1,7 +1,8 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Get } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Get, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CurrentUser, JwtPayload } from './decorators';
 import { Public } from './decorators/public.decorator';
+import { LoginDto, RefreshTokenDto, LogoutDto } from './dto';
 
 /**
  * Auth Controller
@@ -20,11 +21,9 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() body: { openid: string; sessionKey?: string }) {
-    const { openid, sessionKey } = body;
-
+  async login(@Body() loginDto: LoginDto) {
     try {
-      const result = await this.authService.login(openid, sessionKey);
+      const result = await this.authService.login(loginDto.openid, loginDto.sessionKey);
 
       return {
         code: 200,
@@ -48,11 +47,9 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() body: { refreshToken: string }) {
-    const { refreshToken } = body;
-
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto) {
     try {
-      const tokens = await this.authService.refreshAccessToken(refreshToken);
+      const tokens = await this.authService.refreshAccessToken(refreshTokenDto.refreshToken);
 
       return {
         code: 200,
@@ -76,11 +73,9 @@ export class AuthController {
   @Public()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() body: { refreshToken: string }) {
-    const { refreshToken } = body;
-
+  async logout(@Body() logoutDto: LogoutDto) {
     try {
-      await this.authService.logout(refreshToken);
+      await this.authService.logout(logoutDto.refreshToken);
 
       return {
         code: 200,

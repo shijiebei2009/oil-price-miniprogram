@@ -21,6 +21,8 @@
     "@nestjs/platform-express": "^10.4.15",
     "@supabase/supabase-js": "2.95.3",
     "axios": "^1.13.6",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
     "coze-coding-dev-sdk": "^0.7.16",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",

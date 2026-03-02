@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { OilPriceModule } from './oil-price/oil-price.module';
 import { LocationModule } from './location/location.module';
 import { SubscriptionMessageModule } from './subscription-message/subscription-message.module';
 import { WechatModule } from './wechat/wechat.module';
+import { AuthModule } from './auth/auth.module';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import * as path from 'path';
 
 @Module({
@@ -19,8 +22,16 @@ import * as path from 'path';
     LocationModule,
     SubscriptionMessageModule,
     WechatModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // 全局应用 JWT 守卫
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

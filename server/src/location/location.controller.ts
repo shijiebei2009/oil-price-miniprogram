@@ -1,7 +1,9 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common'
 import { LocationService, LocationResponse } from './location.service'
+import { Public } from '@/auth/decorators'
 
 @Controller('location')
+@Public()
 export class LocationController {
   private readonly logger = new Logger(LocationController.name)
 

@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Query, Logger } from '@nestjs/common'
 import { WechatService } from './wechat.service'
 import { getSupabaseClient } from '@/storage/database/supabase-client'
+import { Public } from '@/auth/decorators'
 
 @Controller('wechat')
 export class WechatController {
@@ -11,6 +12,7 @@ export class WechatController {
   /**
    * 微信登录：用 code 换取 openid
    */
+  @Public()
   @Post('login')
   async login(@Body() body: { code: string }) {
     const { code } = body

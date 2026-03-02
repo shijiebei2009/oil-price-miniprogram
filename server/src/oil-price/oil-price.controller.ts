@@ -1,7 +1,9 @@
 import { Controller, Get, Query } from '@nestjs/common'
 import { OilPriceService } from './oil-price.service'
+import { Public } from '@/auth/decorators'
 
 @Controller('oil-price')
+@Public()
 export class OilPriceController {
   constructor(private readonly oilPriceService: OilPriceService) {}
 

@@ -122,10 +122,19 @@ export class LocationService implements OnModuleInit {
 
   /**
    * 生成缓存 key（使用坐标）
-   * 说明：使用经纬度作为缓存Key，保留4位小数（约10米精度）
+   * 说明：使用经纬度作为缓存Key，保留2位小数（约1公里精度）
+   * 
+   * 为什么用2位小数而不是4位小数？
+   * - 4位小数（10米精度）：同一城市内会产生大量重复缓存
+   * - 2位小数（1公里精度）：精度对城市级定位已足够，大幅减少缓存数据量
+   * - 距离算法会处理精度问题：即使Key不同，距离<20km也能命中缓存
+   * 
+   * 示例：北京（140km × 140km）
+   * - 4位小数：约196个缓存（140/10 × 140/10）❌
+   * - 2位小数：约14个缓存（140/1 × 140/1）✅ 减少93%
    */
   private generateCacheKey(lat: number, lng: number): string {
-    return `${lat.toFixed(4)},${lng.toFixed(4)}`
+    return `${lat.toFixed(2)},${lng.toFixed(2)}`
   }
 
   /**

@@ -161,6 +161,9 @@ const IndexPage = () => {
     if (city) {
       setCurrentCity(city)
       console.log('自动定位到城市:', city)
+
+      // 保存城市信息到本地存储，供其他页面使用
+      Taro.setStorageSync('userCity', city)
     }
   })
 

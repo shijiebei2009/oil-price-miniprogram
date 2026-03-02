@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import { useLoad, showToast, requestSubscribeMessage, login, getStorageSync, setStorageSync, getEnv, ENV_TYPE } from '@tarojs/taro'
+import { useLoad, showToast, requestSubscribeMessage, login, getStorageSync, setStorageSync, getEnv, ENV_TYPE, getLocation } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
 import './index.css'
@@ -324,12 +324,88 @@ const NoticePage = () => {
     }
   }
 
+  // 获取用户城市信息
+  const getUserCity = async () => {
+    try {
+      // 先从本地存储获取
+      const cachedCity = getStorageSync('userCity')
+      if (cachedCity) {
+        console.log('从缓存获取城市:', cachedCity)
+        setCity(cachedCity)
+        setProvince(getProvinceName(cachedCity))
+        return
+      }
+
+      // 如果没有缓存，调用位置服务获取当前城市
+      console.log('缓存中没有城市信息，调用位置服务获取')
+      const location = await getLocation({ type: isWeapp ? 'gcj02' : 'wgs84' })
+
+      const res = await Network.request({
+        url: '/api/location/reverse-geocode',
+        method: 'GET',
+        data: {
+          lat: location.latitude,
+          lng: location.longitude
+        }
+      })
+
+      if (res.data?.code === 200 && res.data?.data) {
+        const cityName = res.data.data.city
+        const provinceName = res.data.data.province
+
+        console.log('获取到城市信息:', cityName, provinceName)
+
+        // 保存到本地存储
+        setStorageSync('userCity', cityName)
+        setCity(cityName)
+        setProvince(provinceName)
+
+        showToast({
+          title: `已定位到${cityName}`,
+          icon: 'success',
+          duration: 1500
+        })
+      }
+    } catch (error) {
+      console.error('获取城市信息失败:', error)
+
+      // 降级方案：使用默认城市
+      setProvince('上海市')
+      setCity('上海')
+    }
+  }
+
+  // 根据城市名称获取省份名称
+  const getProvinceName = (cityName: string): string => {
+    // 简单的映射表，实际应该从数据中获取
+    const cityProvinceMap: Record<string, string> = {
+      '北京': '北京市',
+      '上海': '上海市',
+      '天津': '天津市',
+      '重庆': '重庆市',
+      '广州': '广东省',
+      '深圳': '广东省',
+      '杭州': '浙江省',
+      '南京': '江苏省',
+      '成都': '四川省',
+      '武汉': '湖北省',
+      '西安': '陕西省',
+    }
+
+    // 如果是直辖市，返回直辖市名称
+    if (cityName in cityProvinceMap) {
+      return cityProvinceMap[cityName]
+    }
+
+    // 默认返回上海市
+    return '上海市'
+  }
+
   useLoad(() => {
     console.log('通知设置页面加载')
 
-    // TODO: 从本地存储或后端获取用户的城市信息
-    setProvince('北京市')
-    setCity('北京')
+    // 获取用户城市信息
+    getUserCity()
 
     // 查询用户的订阅状态
     loadUserSubscriptions()

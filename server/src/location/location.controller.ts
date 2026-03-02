@@ -73,10 +73,10 @@ export class LocationController {
           ...stats,
           info: {
             cacheStrategy: '距离算法 + 城市级聚合缓存',
-            distanceThreshold: '10公里',
-            baseCacheDuration: '7天',
-            randomOffset: '±12小时（避免缓存雪崩）',
-            description: '同一城市10公里范围内的查询都能命中缓存，命中率接近100%'
+            distanceThreshold: '20公里',
+            cacheDuration: '7天',
+            expiration: '创建时间 + 7天（用户访问时间是随机的，所以过期时间自然也是随机的）',
+            description: '同一城市20公里范围内的查询都能命中缓存，命中率接近100%'
           }
         }
       }

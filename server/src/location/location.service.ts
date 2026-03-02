@@ -48,21 +48,28 @@ export class LocationService implements OnModuleInit {
   private readonly cacheFilePath = path.join(process.cwd(), 'data', 'location-cache.json')
   
   /**
-   * 基础缓存时长：7天
+   * 缓存时长：7天
+   * 说明：城市信息很少变化，7天缓存可以大幅减少 API 调用
+   * 注意：缓存过期时间是创建时间 + 7天，用户访问时间是随机的，所以过期时间自然也是随机的
    */
-  private readonly baseCacheDuration = 7 * 24 * 60 * 60 * 1000
+  private readonly cacheDuration = 7 * 24 * 60 * 60 * 1000 // 7天
   
   /**
-   * 随机偏移范围：±12小时
-   * 说明：避免所有缓存同时过期，防止缓存雪崩
+   * 距离阈值：20公里
+   * 说明：如果用户位置与缓存位置距离在20公里内，直接使用缓存
+   * 
+   * 评估依据：
+   * 1. 城市面积差异：大城市（北京140km、上海90km）vs 小城市（深圳50km）
+   * 2. 油价格局：同一城市内的油价是统一的，跨城市才有差异
+   * 3. 覆盖范围：20公里可以覆盖一个城市的大部分区域
+   * 4. 避免跨城市：大部分城市间距离 > 50公里，20公里不会误判
+   * 
+   * 特例说明：
+   * - 广州 ↔ 佛山：约25公里（可能跨城市，但油价可能相近）
+   * - 上海 ↔ 苏州：约85公里（不会跨城市）
+   * - 北京 ↔ 天津：约120公里（不会跨城市）
    */
-  private readonly randomOffsetRange = 24 * 60 * 60 * 1000 // 24小时（±12小时）
-  
-  /**
-   * 距离阈值：10公里
-   * 说明：如果用户位置与缓存位置距离在10公里内，直接使用缓存
-   */
-  private readonly distanceThreshold = 10 // 10公里
+  private readonly distanceThreshold = 20 // 20公里
   
   private cacheData: LocationCache = {}
 
@@ -111,20 +118,6 @@ export class LocationService implements OnModuleInit {
    */
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180)
-  }
-
-  /**
-   * 计算随机过期时间（避免缓存雪崩）
-   * @returns 过期时间戳
-   */
-  private calculateExpirationTime(): number {
-    const now = Date.now()
-    // 基础过期时间：7天
-    const baseExpiresAt = now + this.baseCacheDuration
-    // 随机偏移：±12小时（避免所有缓存同时过期）
-    const randomOffset = Math.random() * this.randomOffsetRange - (this.randomOffsetRange / 2)
-    
-    return baseExpiresAt + randomOffset
   }
 
   /**
@@ -258,19 +251,21 @@ export class LocationService implements OnModuleInit {
       const cityName = this.extractCityName(data)
       const provinceName = data.result.address_component.province.replace('省', '').replace('市', '')
       const cacheKey = this.generateCacheKey(provinceName, cityName)
+      const now = new Date()
 
       this.cacheData[cacheKey] = {
         lat,
         lng,
         cityName,
         provinceName,
-        cachedAt: new Date().toISOString(),
-        expiresAt: new Date(this.calculateExpirationTime()).toISOString()
+        cachedAt: now.toISOString(),
+        // 过期时间 = 创建时间 + 7天（用户访问时间是随机的，所以过期时间自然也是随机的）
+        expiresAt: new Date(now.getTime() + this.cacheDuration).toISOString()
       }
 
       await this.saveCache()
 
-      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存，7天±12小时过期）`)
+      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存，7天后过期）`)
 
       return data
     } catch (error) {

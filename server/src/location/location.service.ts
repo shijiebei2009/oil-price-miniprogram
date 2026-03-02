@@ -121,12 +121,11 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 生成缓存 key（使用城市名称）
-   * 说明：城市级聚合缓存，同一城市的所有查询都使用同一个缓存
-   * 命中率接近100%，只排除城市边界边缘的查询
+   * 生成缓存 key（使用坐标）
+   * 说明：使用经纬度作为缓存Key，保留4位小数（约10米精度）
    */
-  private generateCacheKey(provinceName: string, cityName: string): string {
-    return `${provinceName}_${cityName}`
+  private generateCacheKey(lat: number, lng: number): string {
+    return `${lat.toFixed(4)},${lng.toFixed(4)}`
   }
 
   /**
@@ -215,19 +214,17 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 逆地理编码：根据经纬度获取地址信息（优化的双重缓存策略）
+   * 逆地理编码：根据经纬度获取地址信息（简化缓存策略）
    * 
    * 查询流程：
    * 1. 先查找附近缓存（距离<20km），找到则直接返回
    * 2. 如果没找到，调用API获取城市名称
-   * 3. API返回后，检查城市缓存（provinceName_cityName）
-   * 4. 如果城市缓存存在且未过期，返回城市缓存
-   * 5. 如果城市缓存不存在或过期，保存到城市缓存
+   * 3. 保存到缓存（使用坐标作为Key）
    * 
    * 优势：
-   * - 附近缓存可以直接返回（快速）
-   * - 城市缓存可以在API返回后检查（避免重复调用）
-   * - 每个城市只需要调用一次API（后续都用城市缓存）
+   * - 逻辑简单清晰
+   * - 无需维护额外的城市数据
+   * - 附近缓存命中率 33%（同一城市20km范围内）
    * 
    * @param lat 纬度
    * @param lng 经度
@@ -238,13 +235,13 @@ export class LocationService implements OnModuleInit {
       throw new Error('腾讯地图 API Key 未配置')
     }
 
-    // 【步骤1】先查找附近缓存（距离<20km）
+    // 1. 先查找附近缓存（距离<20km）
     const nearbyCache = this.findNearbyCache(lat, lng)
     if (nearbyCache) {
       return this.buildResponseFromCache(nearbyCache)
     }
 
-    // 【步骤2】附近缓存未命中，调用API
+    // 2. 附近缓存未命中，调用API
     try {
       const url = `${this.baseUrl}/?location=${lat},${lng}&key=${this.apiKey}&get_poi=1`
       this.logger.log(`🔍 调用腾讯地图逆地理编码 API: lat=${lat}, lng=${lng}`)
@@ -263,19 +260,11 @@ export class LocationService implements OnModuleInit {
         throw new Error(`腾讯地图 API 错误: ${data.message}`)
       }
 
-      // 【步骤3】解析城市名称
+      // 3. 保存到缓存（使用坐标作为Key）
       const cityName = this.extractCityName(data)
       const provinceName = data.result.address_component.province.replace('省', '').replace('市', '')
-      const cacheKey = this.generateCacheKey(provinceName, cityName)
+      const cacheKey = this.generateCacheKey(lat, lng)
 
-      // 【步骤4】检查城市缓存（API返回后才知道城市名称）
-      const cityCache = this.cacheData[cacheKey]
-      if (cityCache && new Date(cityCache.expiresAt) > new Date()) {
-        this.logger.log(`✅ 命中城市缓存: ${cacheKey}`)
-        return this.buildResponseFromCache(cityCache)
-      }
-
-      // 【步骤5】城市缓存不存在或过期，保存到城市缓存
       this.cacheData[cacheKey] = {
         lat,
         lng,
@@ -287,7 +276,7 @@ export class LocationService implements OnModuleInit {
 
       await this.saveCache()
 
-      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已保存到城市缓存，7天后过期）`)
+      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存，7天后过期）`)
 
       return data
     } catch (error) {

@@ -72,24 +72,28 @@ export class LocationController {
         data: {
           ...stats,
           info: {
-            cacheStrategy: '双重缓存策略',
-            strategy: '附近缓存优先（距离<20km）→ 城市缓存次之',
+            cacheStrategy: '附近缓存策略',
+            strategy: '先查找附近缓存（距离<20km），未命中则调用API',
             distanceThreshold: '20公里',
             cacheDuration: '7天',
             expiration: '创建时间 + 7天',
+            cacheKeyType: '坐标（lat,lng）',
             queryFlow: [
               '1. 先查找附近缓存（距离<20km），找到则直接返回',
               '2. 如果没找到，调用API获取城市名称',
-              '3. API返回后，检查城市缓存（provinceName_cityName）',
-              '4. 如果城市缓存存在且未过期，返回城市缓存',
-              '5. 如果城市缓存不存在或过期，保存到城市缓存'
+              '3. 保存到缓存（使用坐标作为Key）'
             ],
             performance: {
               nearbyCache: '遍历所有缓存，找到第一个距离<20km的缓存就返回',
-              cityCache: '直接查hash表，O(1)时间复杂度',
-              apiCall: '每个城市只需要调用一次API'
+              cacheHitRate: '约33%（同一城市20km范围内）',
+              apiCall: '附近缓存未命中时调用'
             },
-            description: '双重缓存策略，最大化缓存命中率，最小化API调用'
+            advantages: [
+              '逻辑简单清晰',
+              '无需维护额外的城市数据',
+              '缓存命中率约33%（同一城市20km范围内）'
+            ],
+            description: '简化缓存策略，最大化代码可维护性'
           }
         }
       }

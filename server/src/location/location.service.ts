@@ -48,18 +48,21 @@ export class LocationService implements OnModuleInit {
   private readonly cacheFilePath = path.join(process.cwd(), 'data', 'location-cache.json')
   
   /**
-   * 缓存时长：7天
-   * 说明：城市信息很少变化，7天缓存可以大幅减少 API 调用
+   * 基础缓存时长：7天
    */
-  private readonly cacheDuration = 7 * 24 * 60 * 60 * 1000 // 7天
+  private readonly baseCacheDuration = 7 * 24 * 60 * 60 * 1000
   
   /**
-   * 经纬度精度：2位小数（约1.1公里）
-   * 说明：城市级别定位不需要高精度，降低精度可以提高缓存命中率
-   * - 上海嘉定（31.38, 121.24）和上海浦东（31.23, 121.52）都能命中同一个缓存
-   * - 2位小数精度约1.1公里，足以覆盖城市级别的定位需求
+   * 随机偏移范围：±12小时
+   * 说明：避免所有缓存同时过期，防止缓存雪崩
    */
-  private readonly coordinatePrecision = 2 // 2位小数
+  private readonly randomOffsetRange = 24 * 60 * 60 * 1000 // 24小时（±12小时）
+  
+  /**
+   * 距离阈值：10公里
+   * 说明：如果用户位置与缓存位置距离在10公里内，直接使用缓存
+   */
+  private readonly distanceThreshold = 10 // 10公里
   
   private cacheData: LocationCache = {}
 
@@ -77,6 +80,94 @@ export class LocationService implements OnModuleInit {
       this.logger.warn('⚠️ 加载位置缓存失败，将创建新缓存')
       this.cacheData = {}
     }
+  }
+
+  /**
+   * 使用 Haversine 公式计算两个经纬度之间的距离（单位：公里）
+   * @param lat1 第一个点的纬度
+   * @param lng1 第一个点的经度
+   * @param lat2 第二个点的纬度
+   * @param lng2 第二个点的经度
+   * @returns 距离（公里）
+   */
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371 // 地球半径（公里）
+    const dLat = this.toRadians(lat2 - lat1)
+    const dLng = this.toRadians(lng2 - lng1)
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2)
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const distance = R * c
+    
+    return distance
+  }
+
+  /**
+   * 将角度转换为弧度
+   */
+  private toRadians(degrees: number): number {
+    return degrees * (Math.PI / 180)
+  }
+
+  /**
+   * 计算随机过期时间（避免缓存雪崩）
+   * @returns 过期时间戳
+   */
+  private calculateExpirationTime(): number {
+    const now = Date.now()
+    // 基础过期时间：7天
+    const baseExpiresAt = now + this.baseCacheDuration
+    // 随机偏移：±12小时（避免所有缓存同时过期）
+    const randomOffset = Math.random() * this.randomOffsetRange - (this.randomOffsetRange / 2)
+    
+    return baseExpiresAt + randomOffset
+  }
+
+  /**
+   * 生成缓存 key（使用城市名称）
+   * 说明：城市级聚合缓存，同一城市的所有查询都使用同一个缓存
+   * 命中率接近100%，只排除城市边界边缘的查询
+   */
+  private generateCacheKey(provinceName: string, cityName: string): string {
+    return `${provinceName}_${cityName}`
+  }
+
+  /**
+   * 查找附近的缓存（距离算法）
+   * 说明：查找距离用户位置10公里内的缓存
+   * @param lat 用户纬度
+   * @param lng 用户经度
+   * @returns 最近的缓存（如果距离在阈值内）
+   */
+  private findNearbyCache(lat: number, lng: number): LocationCacheEntry | null {
+    let nearestCache: LocationCacheEntry | null = null
+    let minDistance = Infinity
+
+    for (const cacheEntry of Object.values(this.cacheData)) {
+      // 检查缓存是否过期
+      if (new Date(cacheEntry.expiresAt) <= new Date()) {
+        continue
+      }
+
+      // 计算距离
+      const distance = this.calculateDistance(lat, lng, cacheEntry.lat, cacheEntry.lng)
+      
+      // 如果距离在阈值内，记录最近的缓存
+      if (distance < this.distanceThreshold && distance < minDistance) {
+        minDistance = distance
+        nearestCache = cacheEntry
+      }
+    }
+
+    if (nearestCache) {
+      this.logger.log(`✅ 命中附近缓存: 距离 ${minDistance.toFixed(2)} 公里`)
+    }
+
+    return nearestCache
   }
 
   /**
@@ -128,25 +219,7 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 生成缓存 key（使用经纬度，保留指定位数的小数）
-   * 说明：降低精度以提高缓存命中率
-   * - 2位小数（约1.1公里精度）：适合城市级别定位
-   * - 同一城市不同区域的查询都能命中缓存
-   * - 例如：上海嘉定（31.38, 121.24）和上海浦东（31.23, 121.52）都能命中缓存
-   */
-  private generateCacheKey(lat: number, lng: number): string {
-    return `${lat.toFixed(this.coordinatePrecision)},${lng.toFixed(this.coordinatePrecision)}`
-  }
-
-  /**
-   * 检查缓存是否有效
-   */
-  private isCacheValid(entry: LocationCacheEntry): boolean {
-    return new Date(entry.expiresAt) > new Date()
-  }
-
-  /**
-   * 逆地理编码：根据经纬度获取地址信息（带缓存）
+   * 逆地理编码：根据经纬度获取地址信息（带距离算法缓存）
    * @param lat 纬度
    * @param lng 经度
    * @returns 地址信息
@@ -156,16 +229,13 @@ export class LocationService implements OnModuleInit {
       throw new Error('腾讯地图 API Key 未配置')
     }
 
-    const cacheKey = this.generateCacheKey(lat, lng)
-    const cachedEntry = this.cacheData[cacheKey]
-
-    // 检查缓存是否存在且有效
-    if (cachedEntry && this.isCacheValid(cachedEntry)) {
-      this.logger.log(`✅ 命中缓存: ${cacheKey} -> ${cachedEntry.cityName}`)
-      return this.buildResponseFromCache(cachedEntry)
+    // 1. 先查找附近的缓存（距离算法）
+    const nearbyCache = this.findNearbyCache(lat, lng)
+    if (nearbyCache) {
+      return this.buildResponseFromCache(nearbyCache)
     }
 
-    // 缓存不存在或过期，调用 API
+    // 2. 缓存未命中，调用 API
     try {
       const url = `${this.baseUrl}/?location=${lat},${lng}&key=${this.apiKey}&get_poi=1`
       this.logger.log(`🔍 调用腾讯地图逆地理编码 API: lat=${lat}, lng=${lng}`)
@@ -184,23 +254,23 @@ export class LocationService implements OnModuleInit {
         throw new Error(`腾讯地图 API 错误: ${data.message}`)
       }
 
-      // 保存到缓存
+      // 3. 保存到缓存（使用城市名称作为缓存Key）
       const cityName = this.extractCityName(data)
       const provinceName = data.result.address_component.province.replace('省', '').replace('市', '')
-      const now = new Date()
+      const cacheKey = this.generateCacheKey(provinceName, cityName)
 
       this.cacheData[cacheKey] = {
         lat,
         lng,
         cityName,
         provinceName,
-        cachedAt: now.toISOString(),
-        expiresAt: new Date(now.getTime() + this.cacheDuration).toISOString()
+        cachedAt: new Date().toISOString(),
+        expiresAt: new Date(this.calculateExpirationTime()).toISOString()
       }
 
       await this.saveCache()
 
-      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存）`)
+      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存，7天±12小时过期）`)
 
       return data
     } catch (error) {

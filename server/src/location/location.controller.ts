@@ -72,9 +72,11 @@ export class LocationController {
         data: {
           ...stats,
           info: {
-            cacheDuration: '7天',
-            coordinatePrecision: '2位小数（约1.1公里）',
-            description: '城市级别定位缓存，同一城市不同区域都能命中'
+            cacheStrategy: '距离算法 + 城市级聚合缓存',
+            distanceThreshold: '10公里',
+            baseCacheDuration: '7天',
+            randomOffset: '±12小时（避免缓存雪崩）',
+            description: '同一城市10公里范围内的查询都能命中缓存，命中率接近100%'
           }
         }
       }

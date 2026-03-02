@@ -69,7 +69,14 @@ export class LocationController {
       return {
         code: 200,
         msg: 'success',
-        data: stats
+        data: {
+          ...stats,
+          info: {
+            cacheDuration: '7天',
+            coordinatePrecision: '2位小数（约1.1公里）',
+            description: '城市级别定位缓存，同一城市不同区域都能命中'
+          }
+        }
       }
     } catch (error) {
       this.logger.error('获取缓存统计失败:', error.message)

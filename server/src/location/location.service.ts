@@ -46,7 +46,21 @@ export class LocationService implements OnModuleInit {
   private readonly apiKey = process.env.TENCENT_MAP_API_KEY
   private readonly baseUrl = 'https://apis.map.qq.com/ws/geocoder/v1'
   private readonly cacheFilePath = path.join(process.cwd(), 'data', 'location-cache.json')
-  private readonly cacheDuration = 24 * 60 * 60 * 1000 // 24小时缓存
+  
+  /**
+   * 缓存时长：7天
+   * 说明：城市信息很少变化，7天缓存可以大幅减少 API 调用
+   */
+  private readonly cacheDuration = 7 * 24 * 60 * 60 * 1000 // 7天
+  
+  /**
+   * 经纬度精度：2位小数（约1.1公里）
+   * 说明：城市级别定位不需要高精度，降低精度可以提高缓存命中率
+   * - 上海嘉定（31.38, 121.24）和上海浦东（31.23, 121.52）都能命中同一个缓存
+   * - 2位小数精度约1.1公里，足以覆盖城市级别的定位需求
+   */
+  private readonly coordinatePrecision = 2 // 2位小数
+  
   private cacheData: LocationCache = {}
 
   constructor() {
@@ -114,10 +128,14 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 生成缓存 key（使用经纬度，保留6位小数）
+   * 生成缓存 key（使用经纬度，保留指定位数的小数）
+   * 说明：降低精度以提高缓存命中率
+   * - 2位小数（约1.1公里精度）：适合城市级别定位
+   * - 同一城市不同区域的查询都能命中缓存
+   * - 例如：上海嘉定（31.38, 121.24）和上海浦东（31.23, 121.52）都能命中缓存
    */
   private generateCacheKey(lat: number, lng: number): string {
-    return `${lat.toFixed(6)},${lng.toFixed(6)}`
+    return `${lat.toFixed(this.coordinatePrecision)},${lng.toFixed(this.coordinatePrecision)}`
   }
 
   /**

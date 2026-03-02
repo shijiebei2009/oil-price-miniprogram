@@ -20,6 +20,14 @@ const NoticePage = () => {
     try {
       // 先从本地存储获取
       let cachedOpenid = getStorageSync('openid')
+
+      // 在小程序环境中，如果缓存的 openid 是 mock 的，清空缓存并重新登录
+      if (isWeapp && cachedOpenid && cachedOpenid.startsWith('mock_')) {
+        console.log('小程序环境检测到 mock openid，清空缓存并重新登录')
+        setStorageSync('openid', '')
+        cachedOpenid = ''
+      }
+
       if (cachedOpenid) {
         console.log('从缓存获取 openid:', cachedOpenid)
         setOpenid(cachedOpenid)

@@ -254,7 +254,8 @@ export class LocationService implements OnModuleInit {
     // 2. 附近缓存未命中，调用高德地图 API
     try {
       // 注意：高德地图坐标顺序为 lng,lat（经度在前）
-      const url = `${this.baseUrl}?location=${lng},${lat}&key=${this.apiKey}&output=json&extensions=all`
+      // 使用 extensions=base 获取基本信息（避免 extensions=all 返回过多数据）
+      const url = `${this.baseUrl}?location=${lng},${lat}&key=${this.apiKey}&output=json&extensions=base`
       this.logger.log(`🔍 调用高德地图逆地理编码 API: lat=${lat}, lng=${lng}`)
 
       const response = await axios.get(url, {
@@ -270,6 +271,12 @@ export class LocationService implements OnModuleInit {
       if (data.status !== '1') {
         this.logger.error(`高德地图 API 返回错误: ${data.info} (infocode: ${data.infocode})`)
         throw new Error(`高德地图 API 错误: ${data.info}`)
+      }
+
+      // 防御性检查：确保 regeocode 存在
+      if (!data.regeocode || !data.regeocode.addressComponent) {
+        this.logger.error('高德地图 API 返回数据格式异常:', JSON.stringify(data))
+        throw new Error('高德地图 API 返回数据格式异常')
       }
 
       // 3. 保存到缓存（使用坐标作为Key）
@@ -304,6 +311,12 @@ export class LocationService implements OnModuleInit {
   private buildResponseFromAmap(amapResponse: any): LocationResponse {
     const component = amapResponse.regeocode.addressComponent
 
+    // 处理直辖市（city 字段为空数组）
+    let cityName = component.city
+    if (Array.isArray(component.city) || !cityName) {
+      cityName = component.province.replace('市', '')
+    }
+
     return {
       status: 0,
       message: 'query ok',
@@ -316,14 +329,14 @@ export class LocationService implements OnModuleInit {
         address_component: {
           nation: component.country || '中国',
           province: component.province || '',
-          city: Array.isArray(component.city) ? '' : component.city,
+          city: cityName,
           district: component.district || '',
           street: component.township || '',
           street_number: ''
         },
         formatted_addresses: {
           recommend: amapResponse.regeocode.formatted_address,
-          rough: `${component.province || ''}${Array.isArray(component.city) ? '' : component.city}`
+          rough: `${component.province || ''}${cityName}`
         }
       }
     }

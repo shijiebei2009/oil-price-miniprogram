@@ -34,7 +34,7 @@ export class LocationController {
         parseFloat(lng),
       )
 
-      const cityName = this.locationService.extractCityName(locationResponse)
+      const cityName = locationResponse.result.address_component.city
 
       console.log('返回城市名称:', cityName)
 

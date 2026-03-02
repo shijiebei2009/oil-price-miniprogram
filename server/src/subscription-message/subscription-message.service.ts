@@ -17,12 +17,29 @@ export class SubscriptionMessageService {
   private readonly logger = new Logger(SubscriptionMessageService.name)
 
   /**
-   * 保存订阅记录
+   * 保存订阅记录（含去重逻辑）
    */
   async saveSubscription(input: SubscriptionMessageInput) {
     try {
       const client = getSupabaseClient()
 
+      // 🔧 去重逻辑：先删除相同条件的旧订阅
+      // 使用 openid + scene + province + city 作为唯一性判断
+      const { error: deleteError } = await client
+        .from('subscription_messages')
+        .delete()
+        .eq('openid', input.openid)
+        .eq('scene', input.scene)
+        .eq('province', input.province || null)
+        .eq('city', input.city || null)
+
+      if (deleteError) {
+        this.logger.warn('删除旧订阅记录失败（继续插入新记录）:', deleteError.message)
+      } else {
+        this.logger.log(`✅ 已删除旧订阅记录: ${input.openid}, scene: ${input.scene}`)
+      }
+
+      // 插入新订阅
       const { data, error } = await client
         .from('subscription_messages')
         .insert({

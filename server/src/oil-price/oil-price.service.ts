@@ -87,9 +87,6 @@ const PROVINCES = [
   { name: '青海省', region: '西北', level: 2 },
   { name: '宁夏回族自治区', region: '西北', level: 2 },
   { name: '新疆维吾尔自治区', region: '西北', level: 2 },
-  { name: '台湾省', region: '华东', level: 1 },
-  { name: '香港特别行政区', region: '华南', level: 1 },
-  { name: '澳门特别行政区', region: '华南', level: 1 },
 ]
 
 // 城市数据（全国地级市）

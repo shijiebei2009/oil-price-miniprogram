@@ -124,4 +124,130 @@ export class SubscriptionMessageService {
       return 0
     }
   }
+
+  /**
+   * 清理重复的订阅记录（保留每个组合的最新记录）
+   * 使用 openid + scene + province + city 作为唯一性判断
+   */
+  async cleanDuplicateSubscriptions() {
+    try {
+      const client = getSupabaseClient()
+
+      // 1. 先查询重复的订阅记录
+      const { data: duplicates, error: queryError } = await client
+        .rpc('get_duplicate_subscriptions')
+
+      if (queryError) {
+        // 如果函数不存在，使用 SQL 方式
+        this.logger.warn('使用 SQL 方式清理重复订阅')
+        return await this.cleanDuplicateSubscriptionsBySQL()
+      }
+
+      const duplicateCount = duplicates?.length || 0
+
+      if (duplicateCount === 0) {
+        this.logger.log('✅ 没有发现重复订阅记录')
+        return {
+          deletedCount: 0,
+          remainingCount: 0
+        }
+      }
+
+      // 2. 删除重复的订阅记录（保留最新的）
+      const { data: deleted, error: deleteError } = await client
+        .rpc('delete_duplicate_subscriptions')
+
+      if (deleteError) {
+        this.logger.error('清理重复订阅记录失败:', deleteError.message)
+        throw new Error(`清理重复订阅记录失败: ${deleteError.message}`)
+      }
+
+      const deletedCount = deleted?.length || 0
+
+      // 3. 查询清理后的总记录数
+      const { count: remainingCount, error: countError } = await client
+        .from('subscription_messages')
+        .select('*', { count: 'exact', head: true })
+
+      if (countError) {
+        this.logger.warn('查询剩余记录数失败:', countError.message)
+      }
+
+      this.logger.log(`✅ 已清理 ${deletedCount} 条重复订阅记录，剩余 ${remainingCount || 0} 条`)
+
+      return {
+        deletedCount,
+        remainingCount: remainingCount || 0
+      }
+    } catch (error) {
+      this.logger.error('清理重复订阅记录异常:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 使用 SQL 方式清理重复订阅（备用方案）
+   */
+  private async cleanDuplicateSubscriptionsBySQL() {
+    try {
+      const client = getSupabaseClient()
+
+      // 查询重复记录
+      const { data: allRecords, error: queryError } = await client
+        .from('subscription_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (queryError) {
+        throw new Error(`查询订阅记录失败: ${queryError.message}`)
+      }
+
+      // 使用 Map 去重，保留每个组合的最新记录
+      const uniqueMap = new Map()
+      const duplicatesToDelete: string[] = []
+
+      for (const record of allRecords || []) {
+        const key = `${record.openid}_${record.scene}_${record.province}_${record.city}`
+        if (uniqueMap.has(key)) {
+          // 已存在，标记为重复
+          duplicatesToDelete.push(record.id)
+        } else {
+          // 首次出现，保留
+          uniqueMap.set(key, record.id)
+        }
+      }
+
+      if (duplicatesToDelete.length === 0) {
+        this.logger.log('✅ 没有发现重复订阅记录')
+        return {
+          deletedCount: 0,
+          remainingCount: allRecords?.length || 0
+        }
+      }
+
+      // 删除重复记录
+      const { data: deleted, error: deleteError } = await client
+        .from('subscription_messages')
+        .delete()
+        .in('id', duplicatesToDelete)
+        .select()
+
+      if (deleteError) {
+        throw new Error(`删除重复记录失败: ${deleteError.message}`)
+      }
+
+      const deletedCount = deleted?.length || 0
+      const remainingCount = (allRecords?.length || 0) - deletedCount
+
+      this.logger.log(`✅ 已清理 ${deletedCount} 条重复订阅记录，剩余 ${remainingCount} 条`)
+
+      return {
+        deletedCount,
+        remainingCount
+      }
+    } catch (error) {
+      this.logger.error('SQL 方式清理重复订阅记录异常:', error)
+      throw error
+    }
+  }
 }

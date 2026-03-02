@@ -81,4 +81,31 @@ export class SubscriptionMessageController {
       }
     }
   }
+
+  /**
+   * 清理重复的订阅记录
+   * POST /api/subscription-message/clean-duplicates
+   */
+  @Post('clean-duplicates')
+  async cleanDuplicateSubscriptions() {
+    try {
+      const result = await this.subscriptionMessageService.cleanDuplicateSubscriptions()
+
+      return {
+        code: 200,
+        msg: '清理成功',
+        data: {
+          deletedCount: result.deletedCount,
+          remainingCount: result.remainingCount,
+          message: `已清理 ${result.deletedCount} 条重复订阅记录，剩余 ${result.remainingCount} 条订阅记录`
+        }
+      }
+    } catch (error) {
+      return {
+        code: 500,
+        msg: error.message || '清理失败',
+        data: null,
+      }
+    }
+  }
 }

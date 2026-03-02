@@ -108,4 +108,30 @@ export class SubscriptionMessageController {
       }
     }
   }
+
+  /**
+   * 清空所有订阅记录（危险操作，仅限管理员）
+   * POST /api/subscription-message/clear-all
+   */
+  @Post('clear-all')
+  async clearAllSubscriptions() {
+    try {
+      const result = await this.subscriptionMessageService.clearAllSubscriptions()
+
+      return {
+        code: 200,
+        msg: '清空成功',
+        data: {
+          deletedCount: result.deletedCount,
+          message: `已清空所有订阅记录，共 ${result.deletedCount} 条`
+        }
+      }
+    } catch (error) {
+      return {
+        code: 500,
+        msg: error.message || '清空失败',
+        data: null,
+      }
+    }
+  }
 }

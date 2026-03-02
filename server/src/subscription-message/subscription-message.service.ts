@@ -250,4 +250,41 @@ export class SubscriptionMessageService {
       throw error
     }
   }
+
+  /**
+   * 清空所有订阅记录（危险操作，仅限管理员）
+   */
+  async clearAllSubscriptions() {
+    try {
+      const client = getSupabaseClient()
+
+      // 先查询总记录数
+      const { count: totalCount, error: countError } = await client
+        .from('subscription_messages')
+        .select('*', { count: 'exact', head: true })
+
+      if (countError) {
+        throw new Error(`查询订阅记录数失败: ${countError.message}`)
+      }
+
+      // 删除所有记录
+      const { error: deleteError } = await client
+        .from('subscription_messages')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000') // 删除所有记录
+
+      if (deleteError) {
+        throw new Error(`清空订阅记录失败: ${deleteError.message}`)
+      }
+
+      this.logger.log(`✅ 已清空所有订阅记录，共 ${totalCount} 条`)
+
+      return {
+        deletedCount: totalCount || 0
+      }
+    } catch (error) {
+      this.logger.error('清空所有订阅记录异常:', error)
+      throw error
+    }
+  }
 }

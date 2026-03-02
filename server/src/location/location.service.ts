@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import axios from 'axios'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 
 export interface LocationResponse {
   status: number
@@ -25,11 +27,27 @@ export interface LocationResponse {
   }
 }
 
+interface LocationCacheEntry {
+  lat: number
+  lng: number
+  cityName: string
+  provinceName: string
+  cachedAt: string
+  expiresAt: string
+}
+
+interface LocationCache {
+  [key: string]: LocationCacheEntry
+}
+
 @Injectable()
-export class LocationService {
+export class LocationService implements OnModuleInit {
   private readonly logger = new Logger(LocationService.name)
   private readonly apiKey = process.env.TENCENT_MAP_API_KEY
   private readonly baseUrl = 'https://apis.map.qq.com/ws/geocoder/v1'
+  private readonly cacheFilePath = path.join(process.cwd(), 'data', 'location-cache.json')
+  private readonly cacheDuration = 24 * 60 * 60 * 1000 // 24小时缓存
+  private cacheData: LocationCache = {}
 
   constructor() {
     if (!this.apiKey) {
@@ -37,8 +55,80 @@ export class LocationService {
     }
   }
 
+  async onModuleInit() {
+    try {
+      await this.loadCache()
+      this.logger.log('✅ 位置缓存已加载')
+    } catch (error) {
+      this.logger.warn('⚠️ 加载位置缓存失败，将创建新缓存')
+      this.cacheData = {}
+    }
+  }
+
   /**
-   * 逆地理编码：根据经纬度获取地址信息
+   * 加载缓存数据
+   */
+  private async loadCache(): Promise<void> {
+    try {
+      const data = await fs.readFile(this.cacheFilePath, 'utf-8')
+      this.cacheData = JSON.parse(data)
+
+      // 清理过期缓存
+      const now = new Date().toISOString()
+      const validEntries: LocationCache = {}
+
+      for (const [key, entry] of Object.entries(this.cacheData)) {
+        if (entry.expiresAt > now) {
+          validEntries[key] = entry
+        }
+      }
+
+      if (Object.keys(validEntries).length !== Object.keys(this.cacheData).length) {
+        this.logger.log(`🧹 清理了 ${Object.keys(this.cacheData).length - Object.keys(validEntries).length} 条过期缓存`)
+        this.cacheData = validEntries
+        await this.saveCache()
+      }
+
+      this.logger.log(`✅ 已加载 ${Object.keys(this.cacheData).length} 条有效缓存`)
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        this.logger.log('📁 缓存文件不存在，将创建新文件')
+      } else {
+        this.logger.error('加载缓存失败:', error.message)
+      }
+      this.cacheData = {}
+    }
+  }
+
+  /**
+   * 保存缓存数据
+   */
+  private async saveCache(): Promise<void> {
+    try {
+      const dataDir = path.dirname(this.cacheFilePath)
+      await fs.mkdir(dataDir, { recursive: true })
+      await fs.writeFile(this.cacheFilePath, JSON.stringify(this.cacheData, null, 2), 'utf-8')
+    } catch (error) {
+      this.logger.error('保存缓存失败:', error.message)
+    }
+  }
+
+  /**
+   * 生成缓存 key（使用经纬度，保留6位小数）
+   */
+  private generateCacheKey(lat: number, lng: number): string {
+    return `${lat.toFixed(6)},${lng.toFixed(6)}`
+  }
+
+  /**
+   * 检查缓存是否有效
+   */
+  private isCacheValid(entry: LocationCacheEntry): boolean {
+    return new Date(entry.expiresAt) > new Date()
+  }
+
+  /**
+   * 逆地理编码：根据经纬度获取地址信息（带缓存）
    * @param lat 纬度
    * @param lng 经度
    * @returns 地址信息
@@ -48,9 +138,19 @@ export class LocationService {
       throw new Error('腾讯地图 API Key 未配置')
     }
 
+    const cacheKey = this.generateCacheKey(lat, lng)
+    const cachedEntry = this.cacheData[cacheKey]
+
+    // 检查缓存是否存在且有效
+    if (cachedEntry && this.isCacheValid(cachedEntry)) {
+      this.logger.log(`✅ 命中缓存: ${cacheKey} -> ${cachedEntry.cityName}`)
+      return this.buildResponseFromCache(cachedEntry)
+    }
+
+    // 缓存不存在或过期，调用 API
     try {
       const url = `${this.baseUrl}/?location=${lat},${lng}&key=${this.apiKey}&get_poi=1`
-      this.logger.log(`调用腾讯地图逆地理编码 API: lat=${lat}, lng=${lng}`)
+      this.logger.log(`🔍 调用腾讯地图逆地理编码 API: lat=${lat}, lng=${lng}`)
 
       const response = await axios.get(url, {
         timeout: 10000,
@@ -66,12 +166,57 @@ export class LocationService {
         throw new Error(`腾讯地图 API 错误: ${data.message}`)
       }
 
-      this.logger.log(`✅ 逆地理编码成功: ${data.result.address_component.city}`)
+      // 保存到缓存
+      const cityName = this.extractCityName(data)
+      const provinceName = data.result.address_component.province.replace('省', '').replace('市', '')
+      const now = new Date()
+
+      this.cacheData[cacheKey] = {
+        lat,
+        lng,
+        cityName,
+        provinceName,
+        cachedAt: now.toISOString(),
+        expiresAt: new Date(now.getTime() + this.cacheDuration).toISOString()
+      }
+
+      await this.saveCache()
+
+      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存）`)
 
       return data
     } catch (error) {
       this.logger.error('逆地理编码失败:', error.message)
       throw new Error(`获取位置信息失败: ${error.message}`)
+    }
+  }
+
+  /**
+   * 从缓存构建响应数据
+   */
+  private buildResponseFromCache(entry: LocationCacheEntry): LocationResponse {
+    return {
+      status: 0,
+      message: 'query ok',
+      result: {
+        location: {
+          lat: entry.lat,
+          lng: entry.lng
+        },
+        address: `${entry.provinceName}${entry.cityName}`,
+        address_component: {
+          nation: '中国',
+          province: entry.provinceName,
+          city: entry.cityName,
+          district: '',
+          street: '',
+          street_number: ''
+        },
+        formatted_addresses: {
+          recommend: `${entry.provinceName}${entry.cityName}`,
+          rough: `${entry.provinceName}${entry.cityName}`
+        }
+      }
     }
   }
 
@@ -94,5 +239,30 @@ export class LocationService {
     }
 
     return cityName
+  }
+
+  /**
+   * 清空缓存（用于测试）
+   */
+  async clearCache(): Promise<void> {
+    this.cacheData = {}
+    await this.saveCache()
+    this.logger.log('🗑️ 缓存已清空')
+  }
+
+  /**
+   * 获取缓存统计信息
+   */
+  getCacheStats() {
+    const now = new Date()
+    const validEntries = Object.values(this.cacheData).filter(entry =>
+      new Date(entry.expiresAt) > now
+    )
+
+    return {
+      totalEntries: Object.keys(this.cacheData).length,
+      validEntries: validEntries.length,
+      expiredEntries: Object.keys(this.cacheData).length - validEntries.length
+    }
   }
 }

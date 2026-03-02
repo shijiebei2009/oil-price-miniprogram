@@ -2,6 +2,7 @@
 
 declare const PROJECT_DOMAIN: string | undefined;
 declare const TARO_ENV: "weapp" | "h5" | undefined;
+declare const TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID: string | undefined;
 
 declare module '*.png';
 declare module '*.gif';

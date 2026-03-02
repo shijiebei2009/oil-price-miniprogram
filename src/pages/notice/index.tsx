@@ -15,6 +15,18 @@ const NoticePage = () => {
   // 检测当前环境
   const isWeapp = getEnv() === ENV_TYPE.WEAPP
 
+  // 获取微信订阅消息模板ID
+  const getTemplateId = () => {
+    // 小程序环境从环境变量读取
+    // 注意：TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID 已在 config/index.ts 中通过 defineConstants 注入
+    if (isWeapp && TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID) {
+      return TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID
+    }
+
+    // H5环境或环境变量未配置时，使用测试模板（降级方案）
+    return '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
+  }
+
   // 获取用户 openid（调用微信登录接口）
   const getOpenid = async () => {
     try {
@@ -126,8 +138,8 @@ const NoticePage = () => {
         return false
       }
 
-      // 微信订阅消息模板ID
-      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
+      // 微信订阅消息模板ID（从环境变量读取）
+      const templateId = getTemplateId()
 
       const result = await Network.request({
         url: '/api/subscription-message',
@@ -200,8 +212,8 @@ const NoticePage = () => {
 
     // 如果开启，需要请求订阅权限（仅小程序环境）
     try {
-      // 微信订阅消息模板ID
-      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
+      // 微信订阅消息模板ID（从环境变量读取）
+      const templateId = getTemplateId()
 
       let success = false
 
@@ -273,8 +285,8 @@ const NoticePage = () => {
 
     // 如果开启，需要请求订阅权限（仅小程序环境）
     try {
-      // 微信订阅消息模板ID
-      const templateId = '5EF4BLK0L6HShqcnRiqBq1SKlWp4ZiqP5L1TmidV_QA'
+      // 微信订阅消息模板ID（从环境变量读取）
+      const templateId = getTemplateId()
 
       let success = false
 

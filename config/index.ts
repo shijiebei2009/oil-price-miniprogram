@@ -58,6 +58,9 @@ export default defineConfig<'vite'>(async (merge, _env) => {
           '',
       ),
       TARO_ENV: JSON.stringify(process.env.TARO_ENV),
+      TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID: JSON.stringify(
+        process.env.TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID || '',
+      ),
     },
     copy: {
       patterns: [],

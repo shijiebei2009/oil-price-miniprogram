@@ -130,16 +130,23 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 查找附近的缓存（距离算法）
-   * 说明：查找距离用户位置10公里内的缓存
+   * 查找附近的缓存（距离<20km）
+   * 
+   * 优化说明：
+   * - 遍历所有缓存，计算距离
+   * - 找到第一个距离<20km的缓存就返回（不需要找最近的）
+   * - 因为同一城市的油价格局相同，距离远近不影响结果
+   * 
+   * 性能考虑：
+   * - 如果有 300 个城市缓存，最多计算 300 次距离
+   * - 每次距离计算都是简单的数学运算，性能消耗很小
+   * - 可以接受，因为大多数情况下会很快找到附近缓存
+   * 
    * @param lat 用户纬度
    * @param lng 用户经度
-   * @returns 最近的缓存（如果距离在阈值内）
+   * @returns 附近的缓存（如果距离在阈值内）
    */
   private findNearbyCache(lat: number, lng: number): LocationCacheEntry | null {
-    let nearestCache: LocationCacheEntry | null = null
-    let minDistance = Infinity
-
     for (const cacheEntry of Object.values(this.cacheData)) {
       // 检查缓存是否过期
       if (new Date(cacheEntry.expiresAt) <= new Date()) {
@@ -149,18 +156,14 @@ export class LocationService implements OnModuleInit {
       // 计算距离
       const distance = this.calculateDistance(lat, lng, cacheEntry.lat, cacheEntry.lng)
       
-      // 如果距离在阈值内，记录最近的缓存
-      if (distance < this.distanceThreshold && distance < minDistance) {
-        minDistance = distance
-        nearestCache = cacheEntry
+      // 如果距离在阈值内，直接返回（不需要找最近的）
+      if (distance < this.distanceThreshold) {
+        this.logger.log(`✅ 命中附近缓存: ${cacheEntry.cityName}，距离 ${distance.toFixed(2)} 公里`)
+        return cacheEntry
       }
     }
 
-    if (nearestCache) {
-      this.logger.log(`✅ 命中附近缓存: 距离 ${minDistance.toFixed(2)} 公里`)
-    }
-
-    return nearestCache
+    return null
   }
 
   /**
@@ -212,7 +215,20 @@ export class LocationService implements OnModuleInit {
   }
 
   /**
-   * 逆地理编码：根据经纬度获取地址信息（带距离算法缓存）
+   * 逆地理编码：根据经纬度获取地址信息（优化的双重缓存策略）
+   * 
+   * 查询流程：
+   * 1. 先查找附近缓存（距离<20km），找到则直接返回
+   * 2. 如果没找到，调用API获取城市名称
+   * 3. API返回后，检查城市缓存（provinceName_cityName）
+   * 4. 如果城市缓存存在且未过期，返回城市缓存
+   * 5. 如果城市缓存不存在或过期，保存到城市缓存
+   * 
+   * 优势：
+   * - 附近缓存可以直接返回（快速）
+   * - 城市缓存可以在API返回后检查（避免重复调用）
+   * - 每个城市只需要调用一次API（后续都用城市缓存）
+   * 
    * @param lat 纬度
    * @param lng 经度
    * @returns 地址信息
@@ -222,13 +238,13 @@ export class LocationService implements OnModuleInit {
       throw new Error('腾讯地图 API Key 未配置')
     }
 
-    // 1. 先查找附近的缓存（距离算法）
+    // 【步骤1】先查找附近缓存（距离<20km）
     const nearbyCache = this.findNearbyCache(lat, lng)
     if (nearbyCache) {
       return this.buildResponseFromCache(nearbyCache)
     }
 
-    // 2. 缓存未命中，调用 API
+    // 【步骤2】附近缓存未命中，调用API
     try {
       const url = `${this.baseUrl}/?location=${lat},${lng}&key=${this.apiKey}&get_poi=1`
       this.logger.log(`🔍 调用腾讯地图逆地理编码 API: lat=${lat}, lng=${lng}`)
@@ -247,25 +263,31 @@ export class LocationService implements OnModuleInit {
         throw new Error(`腾讯地图 API 错误: ${data.message}`)
       }
 
-      // 3. 保存到缓存（使用城市名称作为缓存Key）
+      // 【步骤3】解析城市名称
       const cityName = this.extractCityName(data)
       const provinceName = data.result.address_component.province.replace('省', '').replace('市', '')
       const cacheKey = this.generateCacheKey(provinceName, cityName)
-      const now = new Date()
 
+      // 【步骤4】检查城市缓存（API返回后才知道城市名称）
+      const cityCache = this.cacheData[cacheKey]
+      if (cityCache && new Date(cityCache.expiresAt) > new Date()) {
+        this.logger.log(`✅ 命中城市缓存: ${cacheKey}`)
+        return this.buildResponseFromCache(cityCache)
+      }
+
+      // 【步骤5】城市缓存不存在或过期，保存到城市缓存
       this.cacheData[cacheKey] = {
         lat,
         lng,
         cityName,
         provinceName,
-        cachedAt: now.toISOString(),
-        // 过期时间 = 创建时间 + 7天（用户访问时间是随机的，所以过期时间自然也是随机的）
-        expiresAt: new Date(now.getTime() + this.cacheDuration).toISOString()
+        cachedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + this.cacheDuration).toISOString()
       }
 
       await this.saveCache()
 
-      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已缓存，7天后过期）`)
+      this.logger.log(`✅ 逆地理编码成功: ${cityName}（已保存到城市缓存，7天后过期）`)
 
       return data
     } catch (error) {

@@ -9,7 +9,7 @@ export interface SubscriptionMessageInput {
   city?: string
   priceType?: string
   targetPrice?: any
-  expiresAt: Date
+  expiresAt: Date  // 🔧 保留为 Date，但可以使用很远的未来时间（2030-01-01）来表示长期订阅意向
 }
 
 @Injectable()
@@ -50,7 +50,7 @@ export class SubscriptionMessageService {
           city: input.city || null,
           price_type: input.priceType || null,
           target_price: input.targetPrice || null,
-          expires_at: input.expiresAt.toISOString(),
+          expires_at: input.expiresAt.toISOString(),  // 🔧 设置为很远的未来时间（2030-01-01）
         })
         .select()
         .single()

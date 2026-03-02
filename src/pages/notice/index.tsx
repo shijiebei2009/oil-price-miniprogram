@@ -11,6 +11,7 @@ const NoticePage = () => {
   const [openid, setOpenid] = useState<string>('')
   const [province, setProvince] = useState<string>('')
   const [city, setCity] = useState<string>('')
+  const [lastSubscribedAt, setLastSubscribedAt] = useState<string>('') // 🔧 最后订阅时间
 
   // 检测当前环境
   const isWeapp = getEnv() === ENV_TYPE.WEAPP
@@ -110,6 +111,22 @@ const NoticePage = () => {
 
       if (result.data.code === 200 && result.data.data) {
         const subscriptions = result.data.data
+
+        // 🔧 保存最后订阅时间
+        if (subscriptions && subscriptions.length > 0) {
+          const latestSubscription = subscriptions[0] // 已按创建时间降序排列
+          const createdAt = new Date(latestSubscription.created_at)
+          const now = new Date()
+          const diffHours = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
+
+          if (diffHours < 24) {
+            setLastSubscribedAt(`最近订阅：${diffHours === 0 ? '刚刚' : diffHours + '小时前'}`)
+          } else if (diffHours < 48) {
+            setLastSubscribedAt(`最近订阅：昨天`)
+          } else {
+            setLastSubscribedAt(`最近订阅：${createdAt.toLocaleDateString('zh-CN')}`)
+          }
+        }
 
         // 检查是否有调价提醒订阅
         const priceChangeSub = subscriptions.find((sub: any) => sub.scene === 'price_change')
@@ -505,7 +522,7 @@ const NoticePage = () => {
         </View>
 
         {/* 说明信息 */}
-        <View className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
+        <View className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 mb-4">
           <Text className="block text-sm font-semibold text-blue-600 mb-2">
             使用说明
           </Text>
@@ -516,6 +533,23 @@ const NoticePage = () => {
             {'\n'}
             3. 通知基于全国均价，具体价格以当地加油站为准
           </Text>
+        </View>
+
+        {/* 🔧 授权有效期提示 */}
+        <View className="bg-gradient-to-br from-amber-50 to-orange-100 rounded-xl p-4">
+          <View className="flex flex-row items-start gap-2">
+            <Text className="text-base">⚠️</Text>
+            <View className="flex-1">
+              <Text className="block text-sm font-semibold text-orange-600 mb-1">
+                重要提示
+              </Text>
+              <Text className="block text-xs text-orange-600 leading-relaxed">
+                微信订阅消息授权有效期为 24 小时，过期后需要重新开启调价提醒才能接收通知。
+                {'\n\n'}
+                {lastSubscribedAt && `📅 ${lastSubscribedAt}`}
+              </Text>
+            </View>
+          </View>
         </View>
       </View>
     </View>

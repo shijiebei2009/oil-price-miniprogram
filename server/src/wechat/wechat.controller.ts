@@ -106,12 +106,12 @@ export class WechatController {
     try {
       const client = getSupabaseClient()
 
-      // 查询所有有效的订阅记录
+      // 🔧 方案1：移除过期时间过滤，查询所有订阅记录
       const { data: subscriptions, error } = await client
         .from('subscription_messages')
         .select('*')
         .eq('scene', scene)
-        .gt('expires_at', new Date().toISOString())
+        // .gt('expires_at', new Date().toISOString())  // ❌ 移除此过滤
 
       if (error) {
         throw new Error(`查询订阅记录失败: ${error.message}`)
@@ -120,18 +120,20 @@ export class WechatController {
       if (!subscriptions || subscriptions.length === 0) {
         return {
           code: 200,
-          msg: '没有有效的订阅记录',
-          data: { sent: 0, failed: 0 }
+          msg: '没有订阅记录',
+          data: { sent: 0, failed: 0, needReauth: 0 }
         }
       }
 
       // 批量发送消息
       let sentCount = 0
       let failedCount = 0
+      let needReauthCount = 0
+      const needReauthOpenids: string[] = []
 
       for (const sub of subscriptions) {
         try {
-          await this.wechatService.sendOilPriceAdjustmentNotice(
+          const result = await this.wechatService.sendOilPriceAdjustmentNotice(
             sub.openid,
             {
               content: `您关注的${sub.province}${sub.city}油价有变动`,
@@ -141,10 +143,24 @@ export class WechatController {
               type
             }
           )
-          sentCount++
+
+          // 🔧 检查授权是否过期
+          if (result.errcode === 43101) {
+            // 授权已过期，需要重新授权
+            needReauthCount++
+            needReauthOpenids.push(sub.openid)
+            this.logger.warn(`用户 ${sub.openid} 授权已过期，需要重新授权`)
+          } else if (result.errcode === 0) {
+            // 发送成功
+            sentCount++
+          } else {
+            // 其他错误
+            failedCount++
+            this.logger.error(`发送消息失败 (${sub.openid}): ${result.errmsg}`)
+          }
         } catch (error) {
           failedCount++
-          this.logger.error(`发送消息失败 (${sub.openid}):`, error.message)
+          this.logger.error(`发送消息异常 (${sub.openid}):`, error.message)
         }
       }
 
@@ -154,6 +170,8 @@ export class WechatController {
         data: {
           sent: sentCount,
           failed: failedCount,
+          needReauth: needReauthCount,
+          needReauthOpenids,
           total: subscriptions.length
         }
       }

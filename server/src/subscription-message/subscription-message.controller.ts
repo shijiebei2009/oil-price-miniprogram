@@ -22,9 +22,9 @@ export class SubscriptionMessageController {
   }) {
     const { openid, templateId, scene, province, city, priceType, targetPrice } = body
 
-    // 计算过期时间（24小时后）
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
+    // 🔧 方案1：设置过期时间为一个很远的未来时间（2030-01-01）
+    // 这样可以避免修改数据库 schema，同时实现长期订阅意向
+    const expiresAt = new Date('2030-01-01T00:00:00.000Z')
 
     try {
       const data = await this.subscriptionMessageService.saveSubscription({

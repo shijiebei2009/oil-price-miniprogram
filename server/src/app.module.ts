@@ -1,6 +1,7 @@
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import * as path from 'path';
 import { AppController } from '@/app.controller';
 import { AppService } from '@/app.service';
 import { OilPriceModule } from './oil-price/oil-price.module';
@@ -10,7 +11,6 @@ import { WechatModule } from './wechat/wechat.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ValidationPipe as CustomValidationPipe } from './common/pipes/validation.pipe';
-import * as path from 'path';
 
 @Module({
   imports: [

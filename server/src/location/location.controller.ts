@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Logger } from '@nestjs/common'
-import { LocationService, LocationResponse } from './location.service'
 import { Public } from '@/auth/decorators'
+import { LocationService } from './location.service'
 
 @Controller('location')
 @Public()

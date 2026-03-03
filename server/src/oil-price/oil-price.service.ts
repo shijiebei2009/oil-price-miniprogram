@@ -1281,26 +1281,46 @@ export class OilPriceService implements OnModuleInit {
       }
     }
 
+    // 获取最近一次调价日期
+    const lastAdjustmentDate = new Date(this.realHistoryData[0].date)
+
+    // 计算从上次调价到现在的天数
+    const daysSinceLastAdjustment = Math.ceil((now.getTime() - lastAdjustmentDate.getTime()) / (1000 * 60 * 60 * 24))
+
+    // 计算平均调价间隔（基于历史数据）
+    const avgInterval = this.calculateAverageAdjustmentInterval()
+
+    // 计算下次调价日期：上次调价日期 + 平均间隔
+    // 如果当前已经超过了理论上的下次调价日期，则基于当前日期计算
+    const nextAdjustmentBaseDate = new Date(lastAdjustmentDate)
+    nextAdjustmentBaseDate.setDate(nextAdjustmentBaseDate.getDate() + avgInterval)
+
+    // 设置下次调价日期
+    nextAdjustmentDate.setTime(nextAdjustmentBaseDate.getTime())
+
+    // 如果计算出的下次调价日期已经过去，则继续累加一个周期
+    while (nextAdjustmentDate < now) {
+      nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + avgInterval)
+    }
+
+    // 计算距离下次调价的天数
+    const daysRemaining = Math.ceil((nextAdjustmentDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
     // 根据最近的历史数据预测趋势
     const recentChanges = this.realHistoryData.slice(0, 7).map(d => d.change)
 
     // 如果只有一条历史数据，无法计算趋势
     if (recentChanges.length === 1) {
-      nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + 14)
       return {
         date: nextAdjustmentDate.toISOString().split('T')[0],
         direction: 'stable',
         expectedChange: 0,
-        daysRemaining: 14,
+        daysRemaining: Math.max(0, daysRemaining),
         trend: '历史数据不足，请等待更多调价记录',
       }
     }
 
     const avgChange = recentChanges.reduce((sum, c) => sum + c, 0) / recentChanges.length
-
-    // 计算平均调价间隔（基于历史数据）
-    const avgInterval = this.calculateAverageAdjustmentInterval()
-    nextAdjustmentDate.setDate(nextAdjustmentDate.getDate() + avgInterval)
 
     // 根据趋势预测方向
     let direction: 'up' | 'down' | 'stable'
@@ -1324,7 +1344,7 @@ export class OilPriceService implements OnModuleInit {
       date: nextAdjustmentDate.toISOString().split('T')[0],
       direction,
       expectedChange: parseFloat(expectedChange.toFixed(3)),
-      daysRemaining: avgInterval,
+      daysRemaining: Math.max(0, daysRemaining),
       trend,
     }
   }

@@ -1,0 +1,128 @@
+.city-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1000;
+}
+
+.city-picker-container {
+  width: 100%;
+  max-height: 70vh;
+  background-color: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.city-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.city-picker-title {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.city-picker-close {
+  font-size: 48rpx;
+  color: #9ca3af;
+  padding: 8rpx;
+}
+
+.city-picker-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32rpx;
+}
+
+.city-region {
+  margin-bottom: 48rpx;
+}
+
+.city-region:last-child {
+  margin-bottom: 0;
+}
+
+.city-region-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 24rpx;
+  display: block;
+}
+
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+}
+
+.city-item {
+  padding: 20rpx;
+  background-color: #f9fafb;
+  border-radius: 12rpx;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.city-item-selected {
+  background-color: #3b82f6;
+}
+
+.city-name {
+  font-size: 28rpx;
+  color: #4b5563;
+  display: block;
+}
+
+.city-item-selected .city-name {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.city-picker-footer {
+  display: flex;
+  border-top: 1rpx solid #f0f0f0;
+  padding: 16rpx 32rpx 40rpx;
+}
+
+.city-picker-cancel {
+  flex: 1;
+  padding: 24rpx;
+  text-align: center;
+  background-color: #f9fafb;
+  border-radius: 16rpx;
+  margin-right: 16rpx;
+}
+
+.city-picker-cancel-text {
+  font-size: 32rpx;
+  color: #6b7280;
+  display: block;
+}
+
+.city-picker-confirm {
+  flex: 1;
+  padding: 24rpx;
+  text-align: center;
+  background-color: #3b82f6;
+  border-radius: 16rpx;
+}
+
+.city-picker-confirm-text {
+  font-size: 32rpx;
+  color: #ffffff;
+  font-weight: 500;
+  display: block;
+}

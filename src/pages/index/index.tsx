@@ -69,8 +69,33 @@ const IndexPage = () => {
       console.log('逆地理编码响应:', res.data)
 
       if (res.data?.code === 200 && res.data?.data) {
-        const cityName = res.data.data.city
+        let cityName = res.data.data.city
         console.log('获取到城市名称:', cityName)
+
+        // 规范化城市名称（确保与后端 PROVINCES 数组一致）
+        // 城市名称应该是完整的省份名称（如"北京市"、"上海市"）
+        if (!cityName.endsWith('省') && !cityName.endsWith('市') && !cityName.endsWith('自治区')) {
+          // 如果没有后缀，尝试添加"市"
+          cityName = cityName + '市'
+        }
+
+        // 特殊处理：新疆、西藏、内蒙古、广西、宁夏等自治区
+        const specialProvinces = {
+          '新疆': '新疆维吾尔自治区',
+          '西藏': '西藏自治区',
+          '内蒙古': '内蒙古自治区',
+          '广西': '广西壮族自治区',
+          '宁夏': '宁夏回族自治区'
+        }
+
+        for (const [shortName, fullName] of Object.entries(specialProvinces)) {
+          if (cityName.includes(shortName) && !cityName.includes('自治区')) {
+            cityName = fullName
+            break
+          }
+        }
+
+        console.log('规范化后的城市名称:', cityName)
         Taro.showToast({
           title: `已定位到${cityName}`,
           icon: 'success',
@@ -146,6 +171,7 @@ const IndexPage = () => {
 
   // 选择城市
   const handleCitySelect = (cityName: string) => {
+    console.log('handleCitySelect 被调用，城市名称:', cityName)
     setCurrentCity(cityName)
     loadPriceData(cityName)
   }
@@ -527,8 +553,8 @@ const IndexPage = () => {
       {/* 城市选择器 */}
       <CityPicker
         visible={showCityPicker}
+        cityList={cityList}
         currentCity={currentCity}
-        cities={cityList}
         onSelect={handleCitySelect}
         onClose={() => setShowCityPicker(false)}
       />

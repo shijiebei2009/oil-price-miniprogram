@@ -538,6 +538,7 @@ export class OilPriceService implements OnModuleInit {
     this.loadPriceCache() // 加载价格缓存
     await this.fetchRealOilPrices()
     this.recordDailyPrice() // 记录今日价格
+    this.checkAndRecordAdjustment() // 检查今天是否是调价日期并记录调价
 
     // 预加载节假日数据
     await this.preloadHolidayData()
@@ -731,6 +732,67 @@ export class OilPriceService implements OnModuleInit {
     this.saveDailyHistoryData()
 
     this.logger.log(`✅ 已记录今日价格: ${todayStr}, 92#=${cityPrice.gas92.toFixed(2)}`)
+  }
+
+  // 检查今天是否是调价日期并记录调价
+  private checkAndRecordAdjustment() {
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+
+    // 获取下次调价日期信息
+    const nextAdjustment = this.getMockNextAdjustment()
+    const nextAdjustmentDate = nextAdjustment.date
+
+    // 检查今天是否是调价日期
+    // 注意：调价日期格式是 "YYYY-MM-DD"
+    if (todayStr === nextAdjustmentDate) {
+      // 检查今天是否已经记录过调价
+      const existingRecord = this.realHistoryData.find(record => record.date === todayStr)
+
+      if (existingRecord) {
+        this.logger.log(`✅ 今日调价已记录，跳过: ${todayStr}`)
+        return
+      }
+
+      // 今天是调价日期，记录调价
+      this.logger.log(`📅 检测到今日是调价日期: ${todayStr}`)
+      this.recordAdjustment(todayStr)
+    } else {
+      this.logger.log(`✅ 今日不是调价日期: ${todayStr}，下次调价: ${nextAdjustmentDate}`)
+    }
+  }
+
+  // 记录调价到历史文件
+  private recordAdjustment(date: string) {
+    const cityPrice = this.realCityPrices['北京'] || this.realCityPrices['北京'] || {
+      gas92: 7.89,
+      gas95: 8.37,
+      gas98: 9.13,
+      diesel0: 7.56
+    }
+
+    // 计算与上次调价的涨跌
+    const change = this.realHistoryData.length > 0
+      ? cityPrice.gas92 - this.realHistoryData[0].gas92
+      : 0
+
+    const newRecord: HistoryPriceData = {
+      date: date,
+      gas92: cityPrice.gas92,
+      gas95: cityPrice.gas95,
+      gas98: cityPrice.gas98,
+      diesel0: cityPrice.diesel0,
+      change: change
+    }
+
+    // 添加到历史数据的最前面
+    this.realHistoryData.unshift(newRecord)
+
+    // 保存到文件
+    this.saveHistoryData()
+
+    const changeText = change > 0 ? `↑ +${change.toFixed(2)}` : change < 0 ? `↓ ${change.toFixed(2)}` : '→ 0.00'
+    this.logger.log(`✅ 已记录调价: ${date}, 92#=${cityPrice.gas92.toFixed(2)} (${changeText})`)
   }
 
   // 检查数据是否需要更新
@@ -1430,9 +1492,6 @@ export class OilPriceService implements OnModuleInit {
       // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
 
-      // 检测价格变化并记录到历史数据（关键逻辑）
-      this.detectAndRecordPriceChange()
-
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
       this.savePriceCache() // 保存缓存
@@ -1523,9 +1582,6 @@ export class OilPriceService implements OnModuleInit {
 
       // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
-
-      // 检测价格变化并记录到历史数据（关键逻辑）
-      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -1621,9 +1677,6 @@ export class OilPriceService implements OnModuleInit {
 
       // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
-
-      // 检测价格变化并记录到历史数据（关键逻辑）
-      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()

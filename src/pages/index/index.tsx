@@ -289,7 +289,7 @@ const IndexPage = () => {
     }
 
     // H5端：复制分享文本
-    const shareText = `油价查询小程序\n\n${currentCity}最新油价：\n92#: ${priceData?.currentPrices[0]?.price.toFixed(2)}元/升\n95#: ${priceData?.currentPrices[1]?.price.toFixed(2)}元/升\n98#: ${priceData?.currentPrices[2]?.price.toFixed(2)}元/升\n柴油: ${priceData?.currentPrices[3]?.price.toFixed(2)}元/升\n\n下次调价：${priceData?.nextAdjustment?.date} ${priceData?.nextAdjustment?.direction === 'up' ? '预计上涨' : priceData?.nextAdjustment?.direction === 'down' ? '预计下降' : '预计稳定'}\n\n快来查查您所在地的油价吧！`
+    const shareText = `油价查询小程序\n\n${currentCity}最新油价：\n92#: ${priceData?.currentPrices[0]?.price.toFixed(2)}元/升\n95#: ${priceData?.currentPrices[1]?.price.toFixed(2)}元/升\n98#: ${priceData?.currentPrices[2]?.price.toFixed(2)}元/升\n柴油: ${priceData?.currentPrices[3]?.price.toFixed(2)}元/升\n\n下次调价：${priceData?.nextAdjustment?.date} ${priceData?.nextAdjustment?.time || ''}\n${priceData?.nextAdjustment?.direction === 'up' ? '预计上涨' : priceData?.nextAdjustment?.direction === 'down' ? '预计下降' : '预计稳定'}\n\n快来查查您所在地的油价吧！`
 
     await Taro.setClipboardData({
       data: shareText
@@ -424,7 +424,7 @@ const IndexPage = () => {
                   <View>
                     <Text className="block text-xs text-gray-500 mb-1">预计日期</Text>
                     <Text className="block text-base font-semibold text-gray-900">
-                      {priceData.nextAdjustment.date}
+                      {priceData.nextAdjustment.date} {priceData.nextAdjustment.time}
                     </Text>
                   </View>
                   <View

@@ -12,6 +12,7 @@ export interface OilPrice {
 
 export interface NextAdjustment {
   date: string
+  time: string // 调价时间点："24时" 或 "0时"
   direction: 'up' | 'down' | 'stable'
   expectedChange: number
   daysRemaining: number
@@ -452,6 +453,35 @@ const CITIES = [
   { name: '黑河', province: '黑龙江省' },
   { name: '绥化', province: '黑龙江省' },
   { name: '大兴安岭', province: '黑龙江省' },
+]
+
+// 2026年官方调价日历（硬编码）
+const ADJUSTMENT_CALENDAR_2026 = [
+  { date: '2026-01-06', time: '24时' },
+  { date: '2026-01-20', time: '24时' },
+  { date: '2026-02-03', time: '24时' },
+  { date: '2026-02-24', time: '24时' },
+  { date: '2026-03-09', time: '24时' },
+  { date: '2026-03-23', time: '24时' },
+  { date: '2026-04-07', time: '24时' },
+  { date: '2026-04-21', time: '24时' },
+  { date: '2026-05-08', time: '24时' },
+  { date: '2026-05-21', time: '24时' },
+  { date: '2026-06-04', time: '24时' },
+  { date: '2026-06-18', time: '24时' },
+  { date: '2026-07-03', time: '24时' },
+  { date: '2026-07-17', time: '24时' },
+  { date: '2026-07-31', time: '24时' },
+  { date: '2026-08-14', time: '24时' },
+  { date: '2026-08-28', time: '24时' },
+  { date: '2026-09-11', time: '24时' },
+  { date: '2026-09-24', time: '24时' },
+  { date: '2026-10-15', time: '24时' },
+  { date: '2026-10-29', time: '24时' },
+  { date: '2026-11-12', time: '24时' },
+  { date: '2026-11-26', time: '24时' },
+  { date: '2026-12-10', time: '24时' },
+  { date: '2026-12-24', time: '24时' },
 ]
 
 @Injectable()
@@ -1988,35 +2018,41 @@ export class OilPriceService implements OnModuleInit {
 
   // ==================== 旧的调价日期计算方法（已废弃） ====================
 
-  // 预测下次调价信息（基于工作日规则）
+  /**
+   * 预测下次调价信息（基于2026年官方调价日历）
+   * 说明：
+   * - 直接使用硬编码的官方调价日历
+   * - 获取当前日期，向后查找最近的调价日期
+   * - 返回调价日期和时间点（24时）
+   */
   private getMockNextAdjustment(): NextAdjustment {
     const now = new Date()
-    const nextAdjustmentDate = new Date(now)
+    const nowStr = now.toISOString().split('T')[0]
+    this.logger.log(`📅 当前日期: ${nowStr}`)
 
-    // 如果没有历史数据，使用默认值（从当前日期开始计算14天后）
-    if (this.realHistoryData.length === 0) {
-      const defaultNextDate = new Date(now)
-      defaultNextDate.setDate(defaultNextDate.getDate() + 14)
-      const daysRemaining = Math.ceil((defaultNextDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    // 在2026年调价日历中，找到第一个大于等于当前日期的调价日期
+    const nextAdjustment = ADJUSTMENT_CALENDAR_2026.find(adjustment => {
+      const adjustmentDate = new Date(adjustment.date)
+      return adjustmentDate >= now
+    })
+
+    // 如果没有找到未来的调价日期（当前日期已超过2026年所有调价日期），返回默认值
+    if (!nextAdjustment) {
+      this.logger.warn('⚠️ 当前日期已超过2026年所有调价日期')
       return {
-        date: defaultNextDate.toISOString().split('T')[0],
+        date: '',
+        time: '',
         direction: 'stable',
         expectedChange: 0,
-        daysRemaining: Math.max(0, daysRemaining),
-        trend: '暂无历史数据，等待首次调价',
+        daysRemaining: 0,
+        trend: '当前日期已超过2026年所有调价日期，请更新调价日历',
       }
     }
 
-    // 获取最近一次调价日期
-    const lastAdjustmentDate = new Date(this.realHistoryData[0].date)
-    this.logger.log(`📅 上次调价日期: ${lastAdjustmentDate.toISOString().split('T')[0]}`)
-
-    // 计算从上次调价日期开始，下一个未来的调价日期
-    const upcomingAdjustment = this.calculateUpcomingAdjustment(now, lastAdjustmentDate)
-    this.logger.log(`📅 下次调价日期（历史平均间隔）: ${upcomingAdjustment.toISOString().split('T')[0]}`)
-
     // 计算距离下次调价的天数
-    const daysRemaining = Math.ceil((upcomingAdjustment.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const adjustmentDate = new Date(nextAdjustment.date)
+    const daysRemaining = Math.ceil((adjustmentDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    this.logger.log(`📅 下次调价日期: ${nextAdjustment.date} ${nextAdjustment.time}`)
     this.logger.log(`📅 距离下次调价天数: ${daysRemaining} 天`)
 
     // 根据最近的历史数据预测趋势
@@ -2025,7 +2061,8 @@ export class OilPriceService implements OnModuleInit {
     // 如果只有一条历史数据，无法计算趋势
     if (recentChanges.length === 1) {
       return {
-        date: upcomingAdjustment.toISOString().split('T')[0],
+        date: nextAdjustment.date,
+        time: nextAdjustment.time,
         direction: 'stable',
         expectedChange: 0,
         daysRemaining: Math.max(0, daysRemaining),
@@ -2054,7 +2091,8 @@ export class OilPriceService implements OnModuleInit {
     const expectedChange = Math.abs(avgChange)
 
     return {
-      date: upcomingAdjustment.toISOString().split('T')[0],
+      date: nextAdjustment.date,
+      time: nextAdjustment.time,
       direction,
       expectedChange: parseFloat(expectedChange.toFixed(3)),
       daysRemaining: Math.max(0, daysRemaining),

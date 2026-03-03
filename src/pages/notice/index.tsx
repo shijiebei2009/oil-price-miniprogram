@@ -370,12 +370,8 @@ const NoticePage = () => {
       const location = await getLocation({ type: isWeapp ? 'gcj02' : 'wgs84' })
 
       const res = await Network.request({
-        url: '/api/location/reverse-geocode',
-        method: 'GET',
-        data: {
-          lat: location.latitude,
-          lng: location.longitude
-        }
+        url: `/api/location/reverse-geocode?lat=${location.latitude}&lng=${location.longitude}`,
+        method: 'GET'
       })
 
       if (res.data?.code === 200 && res.data?.data) {

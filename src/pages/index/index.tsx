@@ -57,16 +57,15 @@ const IndexPage = () => {
       console.log('获取到位置:', location)
 
       // 调用后端逆地理编码接口
+      // 注意：H5 环境下，GET 请求的参数必须放在 URL 的 query string 中
       const res = await Network.request({
-        url: '/api/location/reverse-geocode',
-        method: 'GET',
-        data: {
-          lat: location.latitude,
-          lng: location.longitude
-        }
+        url: `/api/location/reverse-geocode?lat=${location.latitude}&lng=${location.longitude}`,
+        method: 'GET'
       })
 
-      console.log('逆地理编码响应:', res.data)
+      console.log('逆地理编码完整响应:', res)
+      console.log('逆地理编码响应状态码:', res.statusCode)
+      console.log('逆地理编码响应数据:', JSON.stringify(res.data))
 
       if (res.data?.code === 200 && res.data?.data) {
         let cityName = res.data.data.city
@@ -125,9 +124,8 @@ const IndexPage = () => {
       console.log('开始获取油价数据，省份:', province)
 
       const res = await Network.request({
-        url: '/api/oil-price/province/current',
-        method: 'GET',
-        data: province ? { province } : {}
+        url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
+        method: 'GET'
       })
 
       console.log('油价数据响应:', res.data)

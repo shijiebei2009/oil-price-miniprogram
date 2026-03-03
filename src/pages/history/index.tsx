@@ -70,9 +70,8 @@ const HistoryPage = () => {
 
       // 然后请求最新数据
       const res = await Network.request({
-        url: '/api/oil-price/history',
-        method: 'GET',
-        data: { count }
+        url: `/api/oil-price/history?count=${count}`,
+        method: 'GET'
       })
 
       if (res.data?.code === 200 && res.data?.data) {

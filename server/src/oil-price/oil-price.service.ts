@@ -29,6 +29,8 @@ export interface PriceData {
 
 export interface HistoryPriceData {
   date: string
+  province: string
+  city: string
   gas92: number
   gas95: number
   gas98: number
@@ -721,7 +723,7 @@ export class OilPriceService implements OnModuleInit {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
 
-    // 检查今天是否已经记录过
+    // 检查今天是否已经记录过（检查任意城市的记录即可）
     const existingRecord = this.dailyHistoryData.find(record => record.date === todayStr)
 
     if (existingRecord) {
@@ -729,35 +731,41 @@ export class OilPriceService implements OnModuleInit {
       return
     }
 
-    // 获取当前价格（以北京为例）
-    const cityPrice = this.realCityPrices['北京'] || this.realCityPrices['北京'] || {
-      gas92: 7.89,
-      gas95: 8.37,
-      gas98: 9.13,
-      diesel0: 7.56
-    }
+    // 遍历所有城市，记录每个城市的价格
+    const newRecords: HistoryPriceData[] = []
 
-    // 计算与昨日的价格变化
-    const change = this.dailyHistoryData.length > 0
-      ? cityPrice.gas92 - this.dailyHistoryData[0].gas92
-      : 0
+    CITIES.forEach((city) => {
+      const cityPrice = this.realCityPrices[city.name]
+      if (!cityPrice) return
 
-    const newRecord: HistoryPriceData = {
-      date: todayStr,
-      gas92: cityPrice.gas92,
-      gas95: cityPrice.gas95,
-      gas98: cityPrice.gas98,
-      diesel0: cityPrice.diesel0,
-      change: change
-    }
+      // 计算与昨日的价格变化
+      const yesterdayRecord = this.dailyHistoryData.find(r =>
+        r.city === city.name && r.province === city.province
+      )
+
+      const change = yesterdayRecord
+        ? cityPrice.gas92 - yesterdayRecord.gas92
+        : 0
+
+      newRecords.push({
+        date: todayStr,
+        province: city.province,
+        city: city.name,
+        gas92: cityPrice.gas92,
+        gas95: cityPrice.gas95,
+        gas98: cityPrice.gas98,
+        diesel0: cityPrice.diesel0,
+        change: change
+      })
+    })
 
     // 添加到最前面
-    this.dailyHistoryData.unshift(newRecord)
+    this.dailyHistoryData.unshift(...newRecords)
 
     // 保存到文件
     this.saveDailyHistoryData()
 
-    this.logger.log(`✅ 已记录今日价格: ${todayStr}, 92#=${cityPrice.gas92.toFixed(2)}`)
+    this.logger.log(`✅ 已记录今日价格: ${todayStr}, 共 ${newRecords.length} 个城市`)
   }
 
   // 检查今天是否是调价日期并记录调价
@@ -790,35 +798,46 @@ export class OilPriceService implements OnModuleInit {
 
   // 记录调价到历史文件
   private recordAdjustment(date: string) {
-    const cityPrice = this.realCityPrices['北京'] || this.realCityPrices['北京'] || {
-      gas92: 7.89,
-      gas95: 8.37,
-      gas98: 9.13,
-      diesel0: 7.56
-    }
+    // 遍历所有城市，记录每个城市的调价
+    const newRecords: HistoryPriceData[] = []
 
-    // 计算与上次调价的涨跌
-    const change = this.realHistoryData.length > 0
-      ? cityPrice.gas92 - this.realHistoryData[0].gas92
-      : 0
+    CITIES.forEach((city) => {
+      const cityPrice = this.realCityPrices[city.name]
+      if (!cityPrice) return
 
-    const newRecord: HistoryPriceData = {
-      date: date,
-      gas92: cityPrice.gas92,
-      gas95: cityPrice.gas95,
-      gas98: cityPrice.gas98,
-      diesel0: cityPrice.diesel0,
-      change: change
-    }
+      // 计算与上次调价的涨跌
+      const lastRecord = this.realHistoryData.find(r =>
+        r.city === city.name && r.province === city.province
+      )
+
+      const change = lastRecord
+        ? cityPrice.gas92 - lastRecord.gas92
+        : 0
+
+      newRecords.push({
+        date: date,
+        province: city.province,
+        city: city.name,
+        gas92: cityPrice.gas92,
+        gas95: cityPrice.gas95,
+        gas98: cityPrice.gas98,
+        diesel0: cityPrice.diesel0,
+        change: change
+      })
+    })
 
     // 添加到历史数据的最前面
-    this.realHistoryData.unshift(newRecord)
+    this.realHistoryData.unshift(...newRecords)
 
     // 保存到文件
     this.saveHistoryData()
 
+    // 计算平均涨跌幅（以北京为例）
+    const cityPrice = this.realCityPrices['北京']
+    const change = newRecords.find(r => r.city === '北京')?.change || 0
     const changeText = change > 0 ? `↑ +${change.toFixed(2)}` : change < 0 ? `↓ ${change.toFixed(2)}` : '→ 0.00'
-    this.logger.log(`✅ 已记录调价: ${date}, 92#=${cityPrice.gas92.toFixed(2)} (${changeText})`)
+
+    this.logger.log(`✅ 已记录调价: ${date}, 共 ${newRecords.length} 个城市, 北京 92#=${cityPrice.gas92.toFixed(2)} (${changeText})`)
   }
 
   // 检查数据是否需要更新
@@ -1755,9 +1774,11 @@ export class OilPriceService implements OnModuleInit {
     const today = new Date()
     const basePrice92 = this.realCityPrices['北京']?.gas92 || 7.89
 
-    // 使用当前价格作为最新调价记录
+    // 使用当前价格作为最新调价记录（北京）
     this.realHistoryData.push({
       date: today.toISOString().split('T')[0],
+      province: '北京市',
+      city: '北京',
       gas92: basePrice92,
       gas95: basePrice92 * 1.06,
       gas98: basePrice92 * 1.16,
@@ -1798,6 +1819,8 @@ export class OilPriceService implements OnModuleInit {
 
     const newRecord: HistoryPriceData = {
       date: today.toISOString().split('T')[0],
+      province: '北京市',
+      city: '北京',
       gas92: cityPrice.gas92,
       gas95: cityPrice.gas95,
       gas98: cityPrice.gas98,
@@ -1841,8 +1864,8 @@ export class OilPriceService implements OnModuleInit {
     const cityPrice = this.realCityPrices[city] || this.realCityPrices['北京']
     const cityInfo = CITIES.find((c) => c.name === city) || CITIES[0]
 
-    // 获取最新的历史数据（上一次调价）
-    const latestHistory = this.realHistoryData[0]
+    // 获取最新的历史数据（上一次调价）- 按省市筛选
+    const latestHistory = this.realHistoryData.find(r => r.city === city && r.province === cityInfo.province)
 
     // 计算涨跌（当前价格 - 上一次调价价格）
     const change92 = latestHistory ? cityPrice.gas92 - latestHistory.gas92 : 0
@@ -1897,8 +1920,11 @@ export class OilPriceService implements OnModuleInit {
     const provincePrice = this.realProvincePrices[province] || this.realProvincePrices['北京市']
     const provinceInfo = PROVINCES.find((p) => p.name === province) || PROVINCES[0]
 
-    // 获取最新的历史数据（上一次调价）
-    const latestHistory = this.realHistoryData[0]
+    // 找到该省份的主要城市（用于获取历史数据）
+    const mainCity = CITIES.find(c => c.province === province) || CITIES[0]
+
+    // 获取最新的历史数据（上一次调价）- 按省市筛选
+    const latestHistory = this.realHistoryData.find(r => r.province === province)
 
     // 计算涨跌（当前价格 - 上一次调价价格）
     const change92 = latestHistory ? provincePrice.gas92 - latestHistory.gas92 : 0
@@ -1939,7 +1965,7 @@ export class OilPriceService implements OnModuleInit {
 
     return {
       currentPrices,
-      nextAdjustment: this.getMockNextAdjustment(),
+      nextAdjustment: this.getMockNextAdjustment(mainCity.name, province),
       updateTime,
       cityName: provinceInfo.name,
       provinceName: provinceInfo.name,
@@ -2209,8 +2235,10 @@ export class OilPriceService implements OnModuleInit {
    * - 直接使用硬编码的官方调价日历
    * - 获取当前日期，向后查找最近的调价日期
    * - 返回调价日期和时间点（24时）
+   * @param city 城市名称（默认北京）
+   * @param province 省份名称（默认北京市）
    */
-  private getMockNextAdjustment(): NextAdjustment {
+  private getMockNextAdjustment(city: string = '北京', province: string = '北京市'): NextAdjustment {
     const now = new Date()
     const nowStr = now.toISOString().split('T')[0]
     this.logger.log(`📅 当前日期: ${nowStr}`)
@@ -2245,17 +2273,30 @@ export class OilPriceService implements OnModuleInit {
     let expectedChange: number
     let trend: string
 
-    // 获取最近一次调价记录（历史数据第一条）
+    // 获取最近一次调价记录（历史数据第一条）- 按省市筛选
     if (this.realHistoryData.length > 0) {
-      const lastAdjustment = this.realHistoryData[0]
-      const currentPrice = this.realCityPrices['北京'].gas92 // 使用北京92#汽油作为参考
+      const lastAdjustment = this.realHistoryData.find(r => r.city === city && r.province === province)
+      
+      if (!lastAdjustment) {
+        // 如果没有找到该省市的历史数据，使用默认值
+        return {
+          date: nextAdjustment.date,
+          time: nextAdjustment.time,
+          direction: 'stable',
+          expectedChange: 0,
+          daysRemaining: Math.max(0, daysRemaining),
+          trend: `${province}${city}暂无历史调价数据，无法预测调价趋势`,
+        }
+      }
+
+      const currentPrice = this.realCityPrices[city]?.gas92 || this.realCityPrices['北京'].gas92
       const lastPrice = lastAdjustment.gas92
       const priceDiff = currentPrice - lastPrice
 
-      this.logger.log(`📊 上次调价日期: ${lastAdjustment.date}`)
-      this.logger.log(`📊 上次调价价格: ${lastPrice} 元/升`)
-      this.logger.log(`📊 当前价格: ${currentPrice} 元/升`)
-      this.logger.log(`📊 价格差: ${priceDiff.toFixed(3)} 元/升`)
+      this.logger.log(`📊 [${province}-${city}] 上次调价日期: ${lastAdjustment.date}`)
+      this.logger.log(`📊 [${province}-${city}] 上次调价价格: ${lastPrice} 元/升`)
+      this.logger.log(`📊 [${province}-${city}] 当前价格: ${currentPrice} 元/升`)
+      this.logger.log(`📊 [${province}-${city}] 价格差: ${priceDiff.toFixed(3)} 元/升`)
 
       // 根据价格差预测下次调价幅度
       // 调价逻辑：价格走势延续趋势，当前价格比上次调价高说明在上涨，下次可能继续上涨

@@ -487,8 +487,10 @@ const ADJUSTMENT_CALENDAR_2026 = [
 @Injectable()
 export class OilPriceService implements OnModuleInit {
   private readonly logger = new Logger(OilPriceService.name)
-  private readonly historyFilePath = path.join(__dirname, '../../data/oil-price-history.json')
-  private readonly dailyHistoryFilePath = path.join(__dirname, '../../data/daily-oil-price-history.json')
+  private readonly dataDir = '/workspace/projects/server/data' // 使用绝对路径
+  private readonly historyFilePath = path.join(this.dataDir, 'oil-price-history.json')
+  private readonly dailyHistoryFilePath = path.join(this.dataDir, 'daily-oil-price-history.json')
+  private readonly priceCacheFilePath = path.join(this.dataDir, 'oil-price-cache.json')
 
   // 全国均价（基准）
   private nationalAverage = {
@@ -517,7 +519,7 @@ export class OilPriceService implements OnModuleInit {
     pricesFetched: boolean
   } = {
     lastUpdate: new Date(),
-    validUntil: new Date(Date.now() + 86400000), // 24小时后过期
+    validUntil: new Date(Date.now() + 7 * 86400000), // 7天后过期
     pricesFetched: false
   }
 
@@ -533,6 +535,7 @@ export class OilPriceService implements OnModuleInit {
   async onModuleInit() {
     this.loadHistoryData()
     this.loadDailyHistoryData()
+    this.loadPriceCache() // 加载价格缓存
     await this.fetchRealOilPrices()
     this.recordDailyPrice() // 记录今日价格
 
@@ -630,6 +633,62 @@ export class OilPriceService implements OnModuleInit {
     }
   }
 
+  // 加载价格缓存（避免每次重启调用API）
+  private loadPriceCache() {
+    try {
+      if (fs.existsSync(this.priceCacheFilePath)) {
+        const data = fs.readFileSync(this.priceCacheFilePath, 'utf-8')
+        const cache = JSON.parse(data)
+
+        // 检查缓存是否过期
+        const now = new Date()
+        const validUntil = new Date(cache.validUntil)
+
+        if (now < validUntil) {
+          // 缓存未过期，恢复数据
+          this.realCityPrices = cache.cityPrices || {}
+          this.realProvincePrices = cache.provincePrices || {}
+          this.dataCache.lastUpdate = new Date(cache.lastUpdate)
+          this.dataCache.validUntil = validUntil
+          this.dataCache.pricesFetched = true
+
+          const daysRemaining = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+          this.logger.log(`✅ 价格缓存已加载（有效期还有 ${daysRemaining} 天）`)
+        } else {
+          this.logger.log('⚠️ 价格缓存已过期，将重新获取数据')
+        }
+      }
+    } catch (error) {
+      this.logger.warn('加载价格缓存失败:', error.message)
+    }
+  }
+
+  // 保存价格缓存
+  private savePriceCache() {
+    try {
+      const dir = path.dirname(this.priceCacheFilePath)
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true })
+      }
+
+      const cache = {
+        cityPrices: this.realCityPrices,
+        provincePrices: this.realProvincePrices,
+        lastUpdate: this.dataCache.lastUpdate.toISOString(),
+        validUntil: this.dataCache.validUntil.toISOString(),
+      }
+
+      fs.writeFileSync(
+        this.priceCacheFilePath,
+        JSON.stringify(cache, null, 2),
+        'utf-8'
+      )
+      this.logger.log('✅ 价格缓存已保存到文件')
+    } catch (error) {
+      this.logger.error('保存价格缓存失败:', error.message)
+    }
+  }
+
   // 记录每日价格
   private recordDailyPrice() {
     const today = new Date()
@@ -690,6 +749,17 @@ export class OilPriceService implements OnModuleInit {
 
   // 从真实数据源获取油价数据
   private async fetchRealOilPrices() {
+    // 检查缓存是否有效（避免重复调用API）
+    if (this.dataCache.pricesFetched && !this.shouldRefreshData()) {
+      const now = new Date()
+      const daysRemaining = Math.ceil((this.dataCache.validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      this.logger.log(`📦 使用缓存数据（有效期还有 ${daysRemaining} 天），跳过API调用`)
+      return
+    }
+
+    // 缓存已过期或无效，调用API获取新数据
+    this.logger.log('🔄 缓存已过期，开始获取新数据...')
+
     // 优先使用天行数据 API
     const tianapiKey = process.env.TIANAPI_KEY
     const juheApiKey = process.env.JUHE_API_KEY
@@ -1362,6 +1432,7 @@ export class OilPriceService implements OnModuleInit {
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
+      this.savePriceCache() // 保存缓存
       this.logger.log('✅ 天聚数行 API 油价数据获取成功')
     } catch (error) {
       this.logger.error('天聚数行 API 获取油价失败:', error.message)
@@ -1452,6 +1523,7 @@ export class OilPriceService implements OnModuleInit {
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
+      this.savePriceCache() // 保存缓存
       this.logger.log('✅ 聚合数据 API 油价数据获取成功')
     } catch (error) {
       this.logger.error('聚合数据 API 获取油价失败:', error.message)
@@ -1546,6 +1618,7 @@ export class OilPriceService implements OnModuleInit {
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
+      this.savePriceCache() // 保存缓存
       this.logger.log('成功从备选数据源获取油价信息')
     } catch (error) {
       this.logger.error('从备选数据源获取油价失败:', error.message)

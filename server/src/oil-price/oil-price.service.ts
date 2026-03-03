@@ -491,6 +491,11 @@ export class OilPriceService implements OnModuleInit {
     pricesFetched: false
   }
 
+  // 节假日缓存（避免频繁调用API）
+  // 格式：Map<日期字符串, { isHoliday: boolean, isWorkday: boolean, remark?: string }>
+  // 例如：'2026-02-17' -> { isHoliday: true, isWorkday: false, remark: '春节' }
+  private holidayCache: Map<string, { isHoliday: boolean; isWorkday: boolean; remark?: string }> = new Map()
+
   // 模块初始化时加载历史数据
   onModuleInit() {
     this.loadHistoryData()
@@ -680,6 +685,152 @@ export class OilPriceService implements OnModuleInit {
 
     // 都不可用，使用备选方案
     await this.fetchFromAlternativeSource()
+  }
+
+  // ==================== 节假日查询方法 ====================
+
+  /**
+   * 从API查询指定日期是否为节假日
+   * 优先使用天聚数行API，失败则使用聚合数据API
+   * @param date 日期对象
+   * @returns 是否为节假日
+   */
+  private async isHolidayFromAPI(date: Date): Promise<{ isHoliday: boolean; isWorkday: boolean; remark?: string }> {
+    const dateStr = date.toISOString().split('T')[0]
+
+    // 检查缓存
+    if (this.holidayCache.has(dateStr)) {
+      return this.holidayCache.get(dateStr)!
+    }
+
+    // 优先使用天聚数行API
+    try {
+      const tianapiKey = process.env.TIANAPI_KEY
+      if (tianapiKey) {
+        const result = await this.queryHolidayFromTianapi(dateStr, tianapiKey)
+        if (result) {
+          this.holidayCache.set(dateStr, result)
+          return result
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`天聚数行节假日查询失败: ${error.message}`)
+    }
+
+    // 备选：使用聚合数据API
+    try {
+      const juheApiKey = process.env.JUHE_API_KEY
+      if (juheApiKey) {
+        const result = await this.queryHolidayFromJuhe(dateStr, juheApiKey)
+        if (result) {
+          this.holidayCache.set(dateStr, result)
+          return result
+        }
+      }
+    } catch (error) {
+      this.logger.warn(`聚合数据节假日查询失败: ${error.message}`)
+    }
+
+    // 如果API都失败，使用本地判断（只判断周末）
+    const day = date.getDay()
+    const isWeekend = day === 0 || day === 6
+    const result = {
+      isHoliday: isWeekend,
+      isWorkday: !isWeekend,
+      remark: isWeekend ? '周末' : '工作日'
+    }
+    this.holidayCache.set(dateStr, result)
+    return result
+  }
+
+  /**
+   * 从天聚数行API查询节假日
+   * @param dateStr 日期字符串（YYYY-MM-DD）
+   * @param apiKey API密钥
+   * @returns 节假日信息
+   */
+  private async queryHolidayFromTianapi(dateStr: string, apiKey: string): Promise<{ isHoliday: boolean; isWorkday: boolean; remark?: string } | null> {
+    try {
+      const apiUrl = `https://apis.tianapi.com/jiejiari/index?key=${apiKey}&date=${dateStr}`
+      const jsonData = await this.httpGet(apiUrl)
+
+      this.logger.log(`天聚数行节假日查询返回:`, jsonData)
+
+      if (jsonData.code === 200 && jsonData.result) {
+        const isHoliday = jsonData.result.isnotwork === 1 // 1表示非工作日
+        const remark = jsonData.result.name || jsonData.result.note
+
+        return {
+          isHoliday,
+          isWorkday: !isHoliday,
+          remark
+        }
+      }
+
+      return null
+    } catch (error) {
+      this.logger.error(`天聚数行节假日查询异常:`, error.message)
+      return null
+    }
+  }
+
+  /**
+   * 从聚合数据API查询节假日
+   * @param dateStr 日期字符串（YYYY-MM-DD）
+   * @param apiKey API密钥
+   * @returns 节假日信息
+   */
+  private async queryHolidayFromJuhe(dateStr: string, apiKey: string): Promise<{ isHoliday: boolean; isWorkday: boolean; remark?: string } | null> {
+    try {
+      // 聚合数据的API需要查询整月的数据
+      const year = dateStr.split('-')[0]
+      const month = dateStr.split('-')[1]
+      const apiUrl = `http://v.juhe.cn/calendar/month?year=${year}&month=${month}&key=${apiKey}`
+      const jsonData = await this.httpGet(apiUrl)
+
+      this.logger.log(`聚合数据节假日查询返回:`, jsonData)
+
+      if (jsonData.error_code === 0 && jsonData.result && jsonData.result.data) {
+        // 查找指定日期的数据
+        const dayData = jsonData.result.data.find((item: any) => item.date === dateStr)
+
+        if (dayData) {
+          const isHoliday = dayData.status !== 2 // 2表示工作日，其他表示假日
+          const remark = dayData.holiday || ''
+
+          return {
+            isHoliday,
+            isWorkday: !isHoliday,
+            remark
+          }
+        }
+      }
+
+      return null
+    } catch (error) {
+      this.logger.error(`聚合数据节假日查询异常:`, error.message)
+      return null
+    }
+  }
+
+  /**
+   * 判断指定日期是否为节假日（优先使用API查询）
+   * @param date 日期对象
+   * @returns 是否为节假日
+   */
+  private async isHoliday(date: Date): Promise<boolean> {
+    const result = await this.isHolidayFromAPI(date)
+    return result.isHoliday
+  }
+
+  /**
+   * 判断指定日期是否为工作日（优先使用API查询）
+   * @param date 日期对象
+   * @returns 是否为工作日
+   */
+  private async isWorkday(date: Date): Promise<boolean> {
+    const result = await this.isHolidayFromAPI(date)
+    return result.isWorkday
   }
 
   // 从天聚数行 API 获取油价
@@ -1271,71 +1422,6 @@ export class OilPriceService implements OnModuleInit {
    * @param date 日期对象
    * @returns true 表示是周末
    */
-  private isWeekend(date: Date): boolean {
-    const day = date.getDay()
-    return day === 0 || day === 6 // 0=周日, 6=周六
-  }
-
-  /**
-   * 判断是否是法定假日
-   * @param date 日期对象
-   * @returns true 表示是法定假日
-   */
-  private isHoliday(date: Date): boolean {
-    const month = date.getMonth() + 1 // 1-12
-    const day = date.getDate()
-    const dateString = `${month}-${day}`
-
-    // 法定假日列表（格式：月-日）
-    // 注意：这里只列出固定日期的假日，调休的假日需要根据每年的国务院通知调整
-    const fixedHolidays = [
-      // 元旦
-      '1-1',
-      // 春节（农历，每年不同，这里简化处理）
-      // 清明节（4月4日-6日之间，每年不同）
-      // 劳动节
-      '5-1',
-      // 端午节（农历，每年不同）
-      // 中秋节（农历，每年不同）
-      // 国庆节
-      '10-1', '10-2', '10-3',
-    ]
-
-    return fixedHolidays.includes(dateString)
-  }
-
-  /**
-   * 判断是否是工作日
-   * @param date 日期对象
-   * @returns true 表示是工作日
-   */
-  private isWorkingDay(date: Date): boolean {
-    return !this.isWeekend(date) && !this.isHoliday(date)
-  }
-
-  /**
-   * 计算从基准日期开始的第 n 个工作日的日期
-   * @param baseDate 基准日期
-   * @param workingDays 工作日数
-   * @returns 计算结果日期
-   */
-  private addWorkingDays(baseDate: Date, workingDays: number): Date {
-    const result = new Date(baseDate)
-    let addedDays = 0
-    let currentWorkingDays = 0
-
-    while (currentWorkingDays < workingDays) {
-      addedDays++
-      result.setDate(result.getDate() + 1)
-
-      if (this.isWorkingDay(result)) {
-        currentWorkingDays++
-      }
-    }
-
-    return result
-  }
-
   /**
    * 计算下次调价日期（基于历史平均间隔）
    *
@@ -1344,6 +1430,8 @@ export class OilPriceService implements OnModuleInit {
    * - 由于法定假日（春节、五一、中秋、国庆）和调休安排，实际间隔可能为13-21天
    * - 历史数据显示：67%的调价间隔为14天，33%为13/15/17/21天
    * - 本方法使用历史平均间隔进行预测，准确率约67%
+   *
+   * 注意：如果需要更精确的计算，可以使用异步方法 `calculateNextAdjustmentDateAsync()`
    *
    * @param lastAdjustmentDate 上次调价日期
    * @returns 下次调价日期
@@ -1357,6 +1445,38 @@ export class OilPriceService implements OnModuleInit {
     nextDate.setDate(nextDate.getDate() + avgInterval)
 
     return nextDate
+  }
+
+  /**
+   * 计算下次调价日期（基于工作日规则，优先使用API查询）
+   *
+   * 说明：
+   * - 国家发改委调价规则：每10个工作日为一个调价窗口
+   * - 使用天聚数行或聚合数据API查询节假日，确保工作日计算准确
+   * - 如果API查询失败，使用本地判断（只判断周末）
+   *
+   * 注意：这是一个异步方法，需要使用 await 调用
+   *
+   * @param lastAdjustmentDate 上次调价日期
+   * @returns 下次调价日期
+   */
+  private async calculateNextAdjustmentDateAsync(lastAdjustmentDate: Date): Promise<Date> {
+    // 国家发改委调价窗口：每10个工作日
+    const WORKING_DAYS_IN_INTERVAL = 10
+
+    // 从上次调价日期开始，计算10个工作日后的日期
+    let count = 0
+    const result = new Date(lastAdjustmentDate)
+
+    while (count < WORKING_DAYS_IN_INTERVAL) {
+      result.setDate(result.getDate() + 1)
+      const isWorkday = await this.isWorkday(result)
+      if (isWorkday) {
+        count++
+      }
+    }
+
+    return result
   }
 
   /**

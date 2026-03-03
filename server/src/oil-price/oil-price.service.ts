@@ -2258,18 +2258,18 @@ export class OilPriceService implements OnModuleInit {
       this.logger.log(`📊 价格差: ${priceDiff.toFixed(3)} 元/升`)
 
       // 根据价格差预测下次调价幅度
-      // 调价逻辑：如果价格比上次调价时上涨较多，下次调价可能下跌；反之亦然
+      // 调价逻辑：价格走势延续趋势，当前价格比上次调价高说明在上涨，下次可能继续上涨
       // 阈值设为 0.1 元/升
       if (priceDiff > 0.1) {
-        direction = 'down'
-        // 价格上涨较多，预计下次调价可能下跌，幅度约为当前价格差的60%-80%
-        expectedChange = Math.abs(priceDiff) * 0.7
-        trend = `当前价格比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，根据市场规律，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
-      } else if (priceDiff < -0.1) {
         direction = 'up'
-        // 价格下跌较多，预计下次调价可能上涨，幅度约为当前价格差的60%-80%
-        expectedChange = Math.abs(priceDiff) * 0.7
-        trend = `当前价格比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，根据市场规律，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
+        // 价格上涨，预计下次调价可能继续上涨，幅度约为当前价格差的50%-80%
+        expectedChange = Math.abs(priceDiff) * 0.65
+        trend = `当前价格比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，价格呈上涨趋势，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
+      } else if (priceDiff < -0.1) {
+        direction = 'down'
+        // 价格下跌，预计下次调价可能继续下跌，幅度约为当前价格差的50%-80%
+        expectedChange = Math.abs(priceDiff) * 0.65
+        trend = `当前价格比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，价格呈下跌趋势，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
       } else {
         direction = 'stable'
         // 价格变化不大，预计下次调价可能持平

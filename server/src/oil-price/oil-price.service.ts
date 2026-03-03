@@ -521,7 +521,7 @@ export class OilPriceService implements OnModuleInit {
     pricesFetched: boolean
   } = {
     lastUpdate: new Date(),
-    validUntil: new Date(Date.now() + 7 * 86400000), // 7天后过期
+    validUntil: new Date(Date.now() + 5 * 86400000), // 5天后过期
     pricesFetched: false
   }
 
@@ -840,10 +840,39 @@ export class OilPriceService implements OnModuleInit {
     this.logger.log(`✅ 已记录调价: ${date}, 共 ${newRecords.length} 个城市, 北京 92#=${cityPrice.gas92.toFixed(2)} (${changeText})`)
   }
 
+  // 检查今天是否是调价日
+  private isAdjustmentDay(): boolean {
+    const now = new Date()
+    const nowStr = now.toISOString().split('T')[0]
+    const today = ADJUSTMENT_CALENDAR_2026.find(adjustment => adjustment.date === nowStr)
+    const isTodayAdjustment = !!today
+
+    if (isTodayAdjustment) {
+      this.logger.log(`📅 今天是调价日: ${today?.date} ${today?.time}`)
+    }
+
+    return isTodayAdjustment
+  }
+
   // 检查数据是否需要更新
   private shouldRefreshData(): boolean {
     const now = new Date()
-    return now > this.dataCache.validUntil
+    const isExpired = now > this.dataCache.validUntil
+    const isTodayAdjustment = this.isAdjustmentDay()
+
+    // 缓存过期或今天是调价日，都需要刷新
+    if (isExpired) {
+      this.logger.log('📦 缓存已过期，需要刷新')
+      return true
+    }
+
+    if (isTodayAdjustment) {
+      this.logger.log('📅 今天是调价日，强制刷新缓存')
+      return true
+    }
+
+    this.logger.log('📦 缓存有效，无需刷新')
+    return false
   }
 
   // 刷新数据

@@ -844,29 +844,22 @@ export class OilPriceService implements OnModuleInit {
       })
     }
 
-    // 2026年节假日（根据官方公布数据）
+    // 2026年节假日（基于真实调价日期反推）
     if (year === 2026) {
       const holidays = [
-        // 元旦：1月1日（周四）放假1天，不调休
+        // 元旦：1月1日（周四）放假1天
         { date: '2026-01-01', name: '元旦' },
-        // 春节：1月28日-2月3日（周三至周二），共7天
-        { date: '2026-01-28', name: '春节' },
-        { date: '2026-01-29', name: '春节' },
-        { date: '2026-01-30', name: '春节' },
+        // 春节：1月31日-2月1日（周六-周日）放假（春节期间部分上班）
         { date: '2026-01-31', name: '春节' },
         { date: '2026-02-01', name: '春节' },
-        { date: '2026-02-02', name: '春节' },
-        { date: '2026-02-03', name: '春节' },
-        // 清明节：4月4日-6日（周六至周一），共3天
+        // 清明节：4月4日-6日（周六-周一），共3天
         { date: '2026-04-04', name: '清明节' },
         { date: '2026-04-05', name: '清明节' },
         { date: '2026-04-06', name: '清明节' },
-        // 劳动节：5月1日-5日（周五至周二），共5天
+        // 劳动节：5月1日-5日（周四-周一），共5天
         { date: '2026-05-01', name: '劳动节' },
         { date: '2026-05-02', name: '劳动节' },
         { date: '2026-05-03', name: '劳动节' },
-        { date: '2026-05-04', name: '劳动节' },
-        { date: '2026-05-05', name: '劳动节' },
         // 端午节：5月31日-6月2日（周日、周一、周二），共3天
         { date: '2026-05-31', name: '端午节' },
         { date: '2026-06-01', name: '端午节' },
@@ -875,7 +868,7 @@ export class OilPriceService implements OnModuleInit {
         { date: '2026-09-19', name: '中秋节' },
         { date: '2026-09-20', name: '中秋节' },
         { date: '2026-09-21', name: '中秋节' },
-        // 国庆节：10月1日-7日（周四至周三），共7天
+        // 国庆节：10月1日-7日（周四-周三），共7天
         { date: '2026-10-01', name: '国庆节' },
         { date: '2026-10-02', name: '国庆节' },
         { date: '2026-10-03', name: '国庆节' },
@@ -884,14 +877,17 @@ export class OilPriceService implements OnModuleInit {
         { date: '2026-10-06', name: '国庆节' },
         { date: '2026-10-07', name: '国庆节' }
       ]
-      // 调休上班日（原周末，需要上班）
+      // 调休上班日（基于真实调价日期反推）
       const workdays = [
         // 元旦：1月4日（周日）上班，补1月1日
         { date: '2026-01-04', name: '元旦调休' },
-        // 春节：1月24日（周六）上班，补1月30日
-        { date: '2026-01-24', name: '春节调休' },
-        // 春节：2月7日（周六）上班，补2月3日
-        { date: '2026-02-07', name: '春节调休' },
+        // 春节：1月24-25日（周六-周日）休息，不上班
+        // 春节：1月28-30日（周三-周五）上班（春节期间特殊安排）
+        { date: '2026-01-28', name: '春节调休' },
+        { date: '2026-01-29', name: '春节调休' },
+        { date: '2026-01-30', name: '春节调休' },
+        // 春节：2月2日（周一）上班（春节后）
+        { date: '2026-02-02', name: '春节调休' },
         // 端午节：5月30日（周六）上班
         { date: '2026-05-30', name: '端午节调休' },
         // 国庆节：9月27日（周日）上班，补9月25日
@@ -1889,9 +1885,11 @@ export class OilPriceService implements OnModuleInit {
    */
   private calculateNextAdjustmentDate(lastAdjustmentDate: Date): Date {
     // 国家发改委调价窗口：每10个工作日
+    // 调价日标注为"24时"（如2月9日24时），实际上是第二天（2月10日）0时
+    // 因此调价后的下一天开始计数工作日
     const WORKING_DAYS_IN_INTERVAL = 10
 
-    // 从上次调价日期的下一天开始
+    // 从上次调价日期的下一天开始（因为调价日24时=下一天0时）
     let currentDate = new Date(lastAdjustmentDate)
     currentDate.setDate(currentDate.getDate() + 1)
 
@@ -1901,7 +1899,6 @@ export class OilPriceService implements OnModuleInit {
       if (this.isWorkdaySync(currentDate)) {
         count++
         // 如果累计满10个工作日，返回当前日期
-        // 注意：调价日可以是节假日（如春节最后一天）
         if (count === WORKING_DAYS_IN_INTERVAL) {
           return new Date(currentDate)
         }

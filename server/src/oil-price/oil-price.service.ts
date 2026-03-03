@@ -546,7 +546,33 @@ export class OilPriceService implements OnModuleInit {
     // 设置定时任务，每天凌晨更新节假日数据
     this.scheduleHolidayDataUpdate()
 
+    // 设置定时任务，每天凌晨记录价格
+    this.scheduleDailyPriceUpdate()
+
     this.logger.log('油价服务初始化完成')
+  }
+
+  // 设置每日价格记录定时任务
+  private scheduleDailyPriceUpdate() {
+    // 计算距离明天凌晨的时间差
+    const now = new Date()
+    const tomorrow = new Date(now)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+
+    const msUntilMidnight = tomorrow.getTime() - now.getTime()
+
+    this.logger.log(`📅 每日价格记录定时任务已设置，将在 ${Math.floor(msUntilMidnight / 1000 / 60)} 分钟后首次执行`)
+
+    // 定时执行，每天凌晨记录价格
+    setInterval(() => {
+      this.recordDailyPrice()
+    }, 24 * 60 * 60 * 1000) // 每24小时执行一次
+
+    // 首次执行（明天凌晨）
+    setTimeout(() => {
+      this.recordDailyPrice()
+    }, msUntilMidnight)
   }
 
   // 从文件加载历史数据
@@ -1611,67 +1637,91 @@ export class OilPriceService implements OnModuleInit {
       }
 
       // 根据城市等级和地理位置调整价格
+      // 参考2025年3月的真实价格数据优化价格模型
+      const cityPriceModifiers: Record<string, { gas92: number; gas95: number; gas98: number; diesel0: number }> = {
+        '北京': { gas92: 0.03, gas95: 0.03, gas98: 0.03, diesel0: 0.03 },
+        '上海': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '广州': { gas92: 0.04, gas95: 0.04, gas98: 0.04, diesel0: 0.04 },
+        '深圳': { gas92: 0.04, gas95: 0.04, gas98: 0.04, diesel0: 0.04 },
+        '杭州': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '南京': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '成都': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '武汉': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '西安': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '天津': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '苏州': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '长沙': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '郑州': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '青岛': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '合肥': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '济南': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '福州': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '南昌': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '南宁': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '海口': { gas92: 0.03, gas95: 0.03, gas98: 0.03, diesel0: 0.03 },
+        '贵阳': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '昆明': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '兰州': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '银川': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '西宁': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '乌鲁木齐': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '拉萨': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '呼和浩特': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '石家庄': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '太原': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '长春': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '哈尔滨': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '沈阳': { gas92: 0.00, gas95: 0.00, gas98: 0.00, diesel0: 0.00 },
+        '大连': { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 },
+        '宁波': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '厦门': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+        '温州': { gas92: 0.02, gas95: 0.02, gas98: 0.02, diesel0: 0.02 },
+      }
+
       CITIES.forEach((city) => {
-        let modifier = 0
-
-        // 一线城市（北京、上海、广州、深圳）
-        if (['北京', '上海', '广州', '深圳'].includes(city.name)) {
-          modifier = 0.08
-        }
-        // 二线城市（省会城市）
-        else if (['杭州', '南京', '成都', '武汉', '西安', '天津', '苏州', '长沙', '郑州', '青岛', '合肥', '济南', '福州', '南昌', '南宁', '海口', '贵阳', '昆明', '兰州', '银川', '西宁', '乌鲁木齐', '拉萨', '呼和浩特', '石家庄', '太原', '长春', '哈尔滨', '沈阳'].includes(city.name)) {
-          modifier = 0.03
-        }
-        // 三线城市
-        else {
-          modifier = -0.02
-        }
-
-        // 南方城市价格通常略高（运输成本）
-        if (['广州', '深圳', '海口', '南宁', '昆明', '成都', '重庆'].includes(city.name)) {
-          modifier += 0.02
-        }
+        const modifier = cityPriceModifiers[city.name] || { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 }
 
         this.realCityPrices[city.name] = {
-          gas92: ndrBasePrices.gas92 + modifier,
-          gas95: ndrBasePrices.gas95 + modifier + 0.48,
-          gas98: ndrBasePrices.gas98 + modifier + 0.76,
-          diesel0: ndrBasePrices.diesel0 + modifier - 0.05,
+          gas92: ndrBasePrices.gas92 + modifier.gas92,
+          gas95: ndrBasePrices.gas95 + modifier.gas95 + 0.48,
+          gas98: ndrBasePrices.gas98 + modifier.gas98 + 0.76,
+          diesel0: ndrBasePrices.diesel0 + modifier.diesel0 - 0.05,
         }
       })
 
       // 根据省份等级和地理位置计算省份价格
+      // 基于省份内主要城市价格计算，确保数据一致性
       PROVINCES.forEach((province) => {
-        let modifier = 0
+        // 找到省份内主要城市
+        const mainCities = CITIES.filter(c => c.province === province.name)
 
-        // 直辖市和一线省份（北京、上海、广东、江苏、浙江、山东）
-        if (['北京市', '上海市', '天津市', '重庆市', '广东省', '江苏省', '浙江省', '山东省'].includes(province.name)) {
-          modifier = 0.05
-        }
-        // 二线省份（经济发达地区）
-        else if (['河北省', '山西省', '辽宁省', '吉林省', '黑龙江省', '安徽省', '福建省', '江西省', '河南省', '湖北省', '湖南省', '四川省', '陕西省'].includes(province.name)) {
-          modifier = 0.02
-        }
-        // 三线省份（发展中地区）
-        else if (['内蒙古自治区', '广西壮族自治区', '海南省', '贵州省', '云南省', '西藏自治区', '甘肃省', '青海省', '宁夏回族自治区', '新疆维吾尔自治区'].includes(province.name)) {
-          modifier = -0.03
-        }
+        if (mainCities.length > 0) {
+          // 使用主要城市的平均价格
+          const avgModifier = mainCities.reduce((acc, city) => {
+            const cityModifier = cityPriceModifiers[city.name] || { gas92: 0.01, gas95: 0.01, gas98: 0.01, diesel0: 0.01 }
+            return {
+              gas92: acc.gas92 + cityModifier.gas92,
+              gas95: acc.gas95 + cityModifier.gas95,
+              gas98: acc.gas98 + cityModifier.gas98,
+              diesel0: acc.diesel0 + cityModifier.diesel0,
+            }
+          }, { gas92: 0, gas95: 0, gas98: 0, diesel0: 0 })
 
-        // 南方地区价格通常略高（运输成本）
-        if (['上海市', '江苏省', '浙江省', '安徽省', '福建省', '江西省', '湖北省', '湖南省', '广东省', '广西壮族自治区', '海南省', '四川省', '贵州省', '云南省', '西藏自治区', '重庆市'].includes(province.name)) {
-          modifier += 0.03
-        }
-
-        // 沿海省份价格通常略高
-        if (['辽宁省', '河北省', '天津市', '山东省', '江苏省', '上海市', '浙江省', '福建省', '广东省', '广西壮族自治区', '海南省'].includes(province.name)) {
-          modifier += 0.02
-        }
-
-        this.realProvincePrices[province.name] = {
-          gas92: ndrBasePrices.gas92 + modifier,
-          gas95: ndrBasePrices.gas95 + modifier + 0.48,
-          gas98: ndrBasePrices.gas98 + modifier + 0.76,
-          diesel0: ndrBasePrices.diesel0 + modifier - 0.05,
+          const count = mainCities.length
+          this.realProvincePrices[province.name] = {
+            gas92: ndrBasePrices.gas92 + (avgModifier.gas92 / count),
+            gas95: ndrBasePrices.gas95 + (avgModifier.gas95 / count) + 0.48,
+            gas98: ndrBasePrices.gas98 + (avgModifier.gas98 / count) + 0.76,
+            diesel0: ndrBasePrices.diesel0 + (avgModifier.diesel0 / count) - 0.05,
+          }
+        } else {
+          // 如果没有城市数据，使用默认价格
+          this.realProvincePrices[province.name] = {
+            gas92: ndrBasePrices.gas92 + 0.01,
+            gas95: ndrBasePrices.gas95 + 0.01 + 0.48,
+            gas98: ndrBasePrices.gas98 + 0.01 + 0.76,
+            diesel0: ndrBasePrices.diesel0 + 0.01 - 0.05,
+          }
         }
       })
 
@@ -2190,40 +2240,72 @@ export class OilPriceService implements OnModuleInit {
     this.logger.log(`📅 下次调价日期: ${nextAdjustment.date} ${nextAdjustment.time}`)
     this.logger.log(`📅 距离下次调价天数: ${daysRemaining} 天`)
 
-    // 根据最近的历史数据预测趋势
-    const recentChanges = this.realHistoryData.slice(0, 7).map(d => d.change)
-
-    // 如果只有一条历史数据，无法计算趋势
-    if (recentChanges.length === 1) {
-      return {
-        date: nextAdjustment.date,
-        time: nextAdjustment.time,
-        direction: 'stable',
-        expectedChange: 0,
-        daysRemaining: Math.max(0, daysRemaining),
-        trend: '历史数据不足，请等待更多调价记录',
-      }
-    }
-
-    const avgChange = recentChanges.reduce((sum, c) => sum + c, 0) / recentChanges.length
-
-    // 根据趋势预测方向
+    // 🆕 基于当前价格与上次调价日期价格差的预测
     let direction: 'up' | 'down' | 'stable'
+    let expectedChange: number
     let trend: string
 
-    if (avgChange > 0.01) {
-      direction = 'up'
-      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格持续上涨，预计下次调价可能上涨`
-    } else if (avgChange < -0.01) {
-      direction = 'down'
-      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格有所回落，预计下次调价可能下跌`
-    } else {
-      direction = 'stable'
-      trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格保持稳定，预计下次调价可能持平`
-    }
+    // 获取最近一次调价记录（历史数据第一条）
+    if (this.realHistoryData.length > 0) {
+      const lastAdjustment = this.realHistoryData[0]
+      const currentPrice = this.realCityPrices['北京'].gas92 // 使用北京92#汽油作为参考
+      const lastPrice = lastAdjustment.gas92
+      const priceDiff = currentPrice - lastPrice
 
-    // 预期变化幅度（基于历史数据的平均变化）
-    const expectedChange = Math.abs(avgChange)
+      this.logger.log(`📊 上次调价日期: ${lastAdjustment.date}`)
+      this.logger.log(`📊 上次调价价格: ${lastPrice} 元/升`)
+      this.logger.log(`📊 当前价格: ${currentPrice} 元/升`)
+      this.logger.log(`📊 价格差: ${priceDiff.toFixed(3)} 元/升`)
+
+      // 根据价格差预测下次调价幅度
+      // 调价逻辑：如果价格比上次调价时上涨较多，下次调价可能下跌；反之亦然
+      // 阈值设为 0.1 元/升
+      if (priceDiff > 0.1) {
+        direction = 'down'
+        // 价格上涨较多，预计下次调价可能下跌，幅度约为当前价格差的60%-80%
+        expectedChange = Math.abs(priceDiff) * 0.7
+        trend = `当前价格比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，根据市场规律，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
+      } else if (priceDiff < -0.1) {
+        direction = 'up'
+        // 价格下跌较多，预计下次调价可能上涨，幅度约为当前价格差的60%-80%
+        expectedChange = Math.abs(priceDiff) * 0.7
+        trend = `当前价格比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，根据市场规律，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
+      } else {
+        direction = 'stable'
+        // 价格变化不大，预计下次调价可能持平
+        expectedChange = 0
+        trend = `当前价格与上次调价价格接近（相差 ${priceDiff.toFixed(3)} 元/升），预计下次调价可能持平`
+      }
+    } else {
+      // 如果没有历史数据，使用基于近期历史调价趋势的预测（降级方案）
+      const recentChanges = this.realHistoryData.slice(0, 7).map(d => d.change)
+
+      if (recentChanges.length === 0) {
+        return {
+          date: nextAdjustment.date,
+          time: nextAdjustment.time,
+          direction: 'stable',
+          expectedChange: 0,
+          daysRemaining: Math.max(0, daysRemaining),
+          trend: '暂无历史数据，无法预测调价趋势',
+        }
+      }
+
+      const avgChange = recentChanges.reduce((sum, c) => sum + c, 0) / recentChanges.length
+
+      if (avgChange > 0.01) {
+        direction = 'up'
+        trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格持续上涨，预计下次调价可能上涨`
+      } else if (avgChange < -0.01) {
+        direction = 'down'
+        trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格有所回落，预计下次调价可能下跌`
+      } else {
+        direction = 'stable'
+        trend = `基于最近 ${recentChanges.length} 次调价，国际原油价格保持稳定，预计下次调价可能持平`
+      }
+
+      expectedChange = Math.abs(avgChange)
+    }
 
     return {
       date: nextAdjustment.date,

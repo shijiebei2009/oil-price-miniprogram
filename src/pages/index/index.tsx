@@ -17,6 +17,7 @@ interface PriceData {
   currentPrices: OilPrice[]
   nextAdjustment: {
     date: string
+    time: string
     direction: 'up' | 'down' | 'stable'
     expectedChange: number
     daysRemaining: number

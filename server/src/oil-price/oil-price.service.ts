@@ -1427,8 +1427,11 @@ export class OilPriceService implements OnModuleInit {
         throw new Error('天聚数行 API 未返回任何有效数据')
       }
 
-      // 生成历史价格数据（从文件读取）
+      // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变化并记录到历史数据（关键逻辑）
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -1518,8 +1521,11 @@ export class OilPriceService implements OnModuleInit {
         }
       })
 
-      // 生成历史价格数据（从文件读取）
+      // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变化并记录到历史数据（关键逻辑）
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()
@@ -1613,8 +1619,11 @@ export class OilPriceService implements OnModuleInit {
         }
       })
 
-      // 生成历史价格数据（从文件读取）
+      // 加载历史数据（从文件读取）
       this.generateRealHistoryData()
+
+      // 检测价格变化并记录到历史数据（关键逻辑）
+      this.detectAndRecordPriceChange()
 
       this.dataCache.pricesFetched = true
       this.dataCache.lastUpdate = new Date()

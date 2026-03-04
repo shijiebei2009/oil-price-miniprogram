@@ -2415,7 +2415,7 @@ export class OilPriceService implements OnModuleInit {
         }
       }
 
-      const currentPrice = this.realCityPrices[city]?.gas92 || this.realCityPrices['北京'].gas92
+      const currentPrice = this.realCityPrices[city]?.gas92 || this.realCityPrices['北京']?.gas92 || 7.5
       const lastPrice = lastAdjustment.gas92
       const priceDiff = currentPrice - lastPrice
 

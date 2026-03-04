@@ -1,5 +1,5 @@
 import { View, Text } from '@tarojs/components'
-import UCharts from '@/components/UCharts'
+import SimpleLineChart from './SimpleLineChart'
 import './index.css'
 
 interface PriceChartProps {
@@ -30,7 +30,7 @@ const PriceChart: React.FC<PriceChartProps> = ({ data, height }) => {
     <View className="price-chart" style={{ width: '100%', height: height || 'auto' }}>
       {/* 图表区域 */}
       <View id="chart-container" className="chart-container" style={{ width: '100%', height: '100%' }}>
-        <UCharts data={data} />
+        <SimpleLineChart data={data} height={height || 400} />
       </View>
     </View>
   )

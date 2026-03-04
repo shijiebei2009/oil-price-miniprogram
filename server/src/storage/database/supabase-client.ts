@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 
-let supabaseClient: ReturnType<typeof createClient> | null = null;
+// 使用 any 类型避免类型推断问题
+let supabaseClient: any = null;
 
 export function getSupabaseClient() {
   if (!supabaseClient) {

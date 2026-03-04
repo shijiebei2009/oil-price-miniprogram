@@ -19,6 +19,7 @@ const HISTORY_CACHE_KEY = 'oil_price_history_data'
 const HistoryPage = () => {
   const [loading, setLoading] = useState(true)
   const [historyData, setHistoryData] = useState<HistoryPriceData[]>([])
+  const [currentProvince, setCurrentProvince] = useState('上海市')
 
   // 从本地缓存加载历史数据
   const loadHistoryFromCache = async (): Promise<HistoryPriceData[] | null> => {
@@ -47,7 +48,7 @@ const HistoryPage = () => {
     }
   }
 
-  const loadHistoryData = async () => {
+  const loadHistoryData = async (province: string = currentProvince) => {
     try {
       setLoading(true)
 
@@ -60,9 +61,9 @@ const HistoryPage = () => {
         setHistoryData(sortedData)
       }
 
-      // 然后请求最新数据
+      // 然后请求最新数据，传递省份参数
       const res = await Network.request({
-        url: '/api/oil-price/history',
+        url: `/api/oil-price/history?province=${encodeURIComponent(province)}`,
         method: 'GET'
       })
 
@@ -108,8 +109,12 @@ const HistoryPage = () => {
     return '0.000'
   }
 
-  useLoad(() => {
-    loadHistoryData()
+  useLoad((options) => {
+    // 从页面参数获取省份
+    const province = options?.province || '上海市'
+    console.log('历史价格页面参数:', { province, options })
+    setCurrentProvince(province)
+    loadHistoryData(province)
   })
 
   return (
@@ -117,12 +122,33 @@ const HistoryPage = () => {
       {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-10 bg-opacity-95">
         <Text className="text-base font-bold text-gray-900">历史价格</Text>
+        <Text className="block text-xs text-gray-500 mt-1">{currentProvince}</Text>
       </View>
 
       {/* 走势图区域 - 固定高度 400px */}
       <View className="w-full px-2 py-3">
         {historyData.length > 0 && (
           <View className="bg-gray-50 rounded-xl p-2">
+            {/* 油品图例 */}
+            <View className="flex flex-row justify-center gap-4 mb-3 flex-wrap">
+              <View className="flex items-center">
+                <View className="w-3 h-3 rounded-full mr-1.5" style={{ backgroundColor: '#ff6b35' }}></View>
+                <Text className="text-xs text-gray-600">92号</Text>
+              </View>
+              <View className="flex items-center">
+                <View className="w-3 h-3 rounded-full mr-1.5" style={{ backgroundColor: '#4facfe' }}></View>
+                <Text className="text-xs text-gray-600">95号</Text>
+              </View>
+              <View className="flex items-center">
+                <View className="w-3 h-3 rounded-full mr-1.5" style={{ backgroundColor: '#a18cd1' }}></View>
+                <Text className="text-xs text-gray-600">98号</Text>
+              </View>
+              <View className="flex items-center">
+                <View className="w-3 h-3 rounded-full mr-1.5" style={{ backgroundColor: '#00d2ff' }}></View>
+                <Text className="text-xs text-gray-600">0号柴油</Text>
+              </View>
+            </View>
+
             <SimpleLineChart
               data={historyData.map((item) => ({
                 date: item.date,

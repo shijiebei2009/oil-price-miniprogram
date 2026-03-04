@@ -457,35 +457,6 @@ const CITIES = [
   { name: '大兴安岭', province: '黑龙江省' },
 ]
 
-// 2026年官方调价日历（硬编码）
-const ADJUSTMENT_CALENDAR_2026 = [
-  { date: '2026-01-06', time: '24时' },
-  { date: '2026-01-20', time: '24时' },
-  { date: '2026-02-03', time: '24时' },
-  { date: '2026-02-24', time: '24时' },
-  { date: '2026-03-09', time: '24时' },
-  { date: '2026-03-23', time: '24时' },
-  { date: '2026-04-07', time: '24时' },
-  { date: '2026-04-21', time: '24时' },
-  { date: '2026-05-08', time: '24时' },
-  { date: '2026-05-21', time: '24时' },
-  { date: '2026-06-04', time: '24时' },
-  { date: '2026-06-18', time: '24时' },
-  { date: '2026-07-03', time: '24时' },
-  { date: '2026-07-17', time: '24时' },
-  { date: '2026-07-31', time: '24时' },
-  { date: '2026-08-14', time: '24时' },
-  { date: '2026-08-28', time: '24时' },
-  { date: '2026-09-11', time: '24时' },
-  { date: '2026-09-24', time: '24时' },
-  { date: '2026-10-15', time: '24时' },
-  { date: '2026-10-29', time: '24时' },
-  { date: '2026-11-12', time: '24时' },
-  { date: '2026-11-26', time: '24时' },
-  { date: '2026-12-10', time: '24时' },
-  { date: '2026-12-24', time: '24时' },
-]
-
 @Injectable()
 export class OilPriceService implements OnModuleInit {
   private readonly logger = new Logger(OilPriceService.name)
@@ -493,6 +464,18 @@ export class OilPriceService implements OnModuleInit {
   private readonly historyFilePath = path.join(this.dataDir, 'oil-price-history.json')
   private readonly dailyHistoryFilePath = path.join(this.dataDir, 'daily-oil-price-history.json')
   private readonly priceCacheFilePath = path.join(this.dataDir, 'oil-price-cache.json')
+  private readonly adjustmentCalendarFilePath = path.join(this.dataDir, 'adjustment-calendar.json')
+
+  // 调价日历数据（支持多年度）
+  private adjustmentCalendarData: {
+    calendars: Record<string, Array<{ date: string; time: string; note?: string }>>
+    metadata: {
+      version: string
+      lastUpdate: string
+      source: string
+      description: string
+    }
+  } | null = null
 
   // 全国均价（基准）
   private nationalAverage = {
@@ -538,6 +521,7 @@ export class OilPriceService implements OnModuleInit {
     this.loadHistoryData()
     this.loadDailyHistoryData()
     this.loadPriceCache() // 加载价格缓存
+    this.loadAdjustmentCalendar() // 加载调价日历
     await this.fetchRealOilPrices()
     this.recordDailyPrice() // 记录今日价格
     this.checkAndRecordAdjustment() // 检查今天是否是调价日期并记录调价
@@ -691,6 +675,61 @@ export class OilPriceService implements OnModuleInit {
     }
   }
 
+  // 加载调价日历
+  private loadAdjustmentCalendar() {
+    try {
+      if (fs.existsSync(this.adjustmentCalendarFilePath)) {
+        const data = fs.readFileSync(this.adjustmentCalendarFilePath, 'utf-8')
+        const parsed = JSON.parse(data)
+
+        // 确保数据结构正确
+        if (parsed && parsed.calendars) {
+          this.adjustmentCalendarData = parsed
+
+          // 统计调价次数
+          const calendars = parsed.calendars || {}
+          const totalAdjustments = Object.values(calendars)
+            .reduce((sum: number, adjustments: any) => sum + adjustments.length, 0)
+
+          this.logger.log(`✅ 调价日历已加载（共 ${Object.keys(calendars).length} 年度，${totalAdjustments} 次调价）`)
+        } else {
+          this.logger.warn('⚠️ 调价日历文件格式错误，将使用空数据')
+          this.adjustmentCalendarData = {
+            calendars: {},
+            metadata: {
+              version: '1.0.0',
+              lastUpdate: new Date().toISOString(),
+              source: '默认数据',
+              description: '调价日历数据'
+            }
+          }
+        }
+      } else {
+        this.logger.warn('⚠️ 调价日历文件不存在，将使用空数据')
+        this.adjustmentCalendarData = {
+          calendars: {},
+          metadata: {
+            version: '1.0.0',
+            lastUpdate: new Date().toISOString(),
+            source: '默认数据',
+            description: '调价日历数据'
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.error('加载调价日历失败:', error.message)
+      this.adjustmentCalendarData = {
+        calendars: {},
+        metadata: {
+          version: '1.0.0',
+          lastUpdate: new Date().toISOString(),
+          source: '默认数据',
+          description: '调价日历数据'
+        }
+      }
+    }
+  }
+
   // 保存价格缓存
   private savePriceCache() {
     try {
@@ -840,13 +879,28 @@ export class OilPriceService implements OnModuleInit {
 
   // 检查今天是否是调价日
   private isAdjustmentDay(): boolean {
+    if (!this.adjustmentCalendarData || !this.adjustmentCalendarData.calendars) {
+      return false
+    }
+
     const now = new Date()
     const nowStr = now.toISOString().split('T')[0]
-    const today = ADJUSTMENT_CALENDAR_2026.find(adjustment => adjustment.date === nowStr)
+    const currentYear = now.getFullYear().toString()
+
+    // 获取当前年度的调价日历
+    const currentYearCalendar = this.adjustmentCalendarData.calendars[currentYear]
+
+    if (!currentYearCalendar) {
+      this.logger.warn(`⚠️ 未找到 ${currentYear} 年的调价日历`)
+      return false
+    }
+
+    // 查找今天是否是调价日
+    const today = currentYearCalendar.find(adjustment => adjustment.date === nowStr)
     const isTodayAdjustment = !!today
 
     if (isTodayAdjustment) {
-      this.logger.log(`📅 今天是调价日: ${today?.date} ${today?.time}`)
+      this.logger.log(`📅 今天是调价日: ${today?.date} ${today?.time} (${today?.note || ''})`)
     }
 
     return isTodayAdjustment
@@ -2270,22 +2324,67 @@ export class OilPriceService implements OnModuleInit {
     const nowStr = now.toISOString().split('T')[0]
     this.logger.log(`📅 当前日期: ${nowStr}`)
 
-    // 在2026年调价日历中，找到第一个大于等于当前日期的调价日期
-    const nextAdjustment = ADJUSTMENT_CALENDAR_2026.find(adjustment => {
-      const adjustmentDate = new Date(adjustment.date)
-      return adjustmentDate >= now
-    })
-
-    // 如果没有找到未来的调价日期（当前日期已超过2026年所有调价日期），返回默认值
-    if (!nextAdjustment) {
-      this.logger.warn('⚠️ 当前日期已超过2026年所有调价日期')
+    // 检查调价日历数据是否可用
+    if (!this.adjustmentCalendarData || !this.adjustmentCalendarData.calendars) {
+      this.logger.warn('⚠️ 调价日历数据不可用')
       return {
         date: '',
         time: '',
         direction: 'stable',
         expectedChange: 0,
         daysRemaining: 0,
-        trend: '当前日期已超过2026年所有调价日期，请更新调价日历',
+        trend: '调价日历数据不可用，请检查配置',
+      }
+    }
+
+    const currentYear = now.getFullYear().toString()
+
+    // 获取当前年度的调价日历
+    const currentYearCalendar = this.adjustmentCalendarData.calendars[currentYear]
+
+    if (!currentYearCalendar) {
+      this.logger.warn(`⚠️ 未找到 ${currentYear} 年的调价日历`)
+      return {
+        date: '',
+        time: '',
+        direction: 'stable',
+        expectedChange: 0,
+        daysRemaining: 0,
+        trend: `未找到 ${currentYear} 年的调价日历，请更新数据`,
+      }
+    }
+
+    // 在当前年度的调价日历中，找到第一个大于等于当前日期的调价日期
+    const nextAdjustment = currentYearCalendar.find(adjustment => {
+      const adjustmentDate = new Date(adjustment.date)
+      return adjustmentDate >= now
+    })
+
+    // 如果没有找到未来的调价日期（当前日期已超过当前年度所有调价日期），尝试查找下一年度
+    if (!nextAdjustment) {
+      const nextYear = (now.getFullYear() + 1).toString()
+      const nextYearCalendar = this.adjustmentCalendarData.calendars[nextYear]
+
+      if (nextYearCalendar && nextYearCalendar.length > 0) {
+        this.logger.log(`📅 当前年度 ${currentYear} 已结束，查找下一年度 ${nextYear} 的调价日历`)
+        return {
+          date: nextYearCalendar[0].date,
+          time: nextYearCalendar[0].time || '24时',
+          direction: 'stable',
+          expectedChange: 0,
+          daysRemaining: Math.ceil((new Date(nextYearCalendar[0].date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+          trend: `当前年度已结束，${nextYear} 年第一次调价`,
+        }
+      }
+
+      this.logger.warn(`⚠️ 当前日期已超过所有已配置的调价日历`)
+      return {
+        date: '',
+        time: '',
+        direction: 'stable',
+        expectedChange: 0,
+        daysRemaining: 0,
+        trend: '当前日期已超过所有已配置的调价日历，请更新数据',
       }
     }
 

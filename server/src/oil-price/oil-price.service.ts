@@ -675,7 +675,6 @@ export class OilPriceService implements OnModuleInit {
 
         if (now < validUntil) {
           // 缓存未过期，恢复数据
-          this.realCityPrices = cache.cityPrices || {}
           this.realProvincePrices = cache.provincePrices || {}
           this.dataCache.lastUpdate = new Date(cache.lastUpdate)
           this.dataCache.validUntil = validUntil
@@ -701,7 +700,6 @@ export class OilPriceService implements OnModuleInit {
       }
 
       const cache = {
-        cityPrices: this.realCityPrices,
         provincePrices: this.realProvincePrices,
         lastUpdate: this.dataCache.lastUpdate.toISOString(),
         validUntil: this.dataCache.validUntil.toISOString(),

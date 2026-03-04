@@ -39,9 +39,19 @@ const RankPage = () => {
 
       if (res.data?.code === 200 && res.data?.data) {
         setProvincePrices(res.data.data)
+      } else {
+        console.error('全国油价数据格式错误:', res.data)
+        Taro.showToast({
+          title: '数据加载失败',
+          icon: 'none'
+        })
       }
     } catch (error) {
       console.error('获取全国油价数据失败:', error)
+      Taro.showToast({
+        title: '网络请求失败',
+        icon: 'none'
+      })
     } finally {
       setLoading(false)
     }

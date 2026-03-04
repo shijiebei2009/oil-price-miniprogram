@@ -74,6 +74,7 @@ const HistoryPage = () => {
         method: 'GET'
       })
 
+      // res.data 包含实际的响应数据 { code, msg, data }
       if (res.data?.code === 200 && res.data?.data) {
         const sortedData = [...res.data.data].sort((a, b) => {
           return new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -82,9 +83,19 @@ const HistoryPage = () => {
 
         // 保存到缓存
         await saveHistoryToCache(res.data.data)
+      } else {
+        console.error('历史价格数据格式错误:', res.data)
+        Taro.showToast({
+          title: '数据加载失败',
+          icon: 'none'
+        })
       }
     } catch (error) {
       console.error('获取历史价格数据失败:', error)
+      Taro.showToast({
+        title: '网络请求失败',
+        icon: 'none'
+      })
     } finally {
       setLoading(false)
     }

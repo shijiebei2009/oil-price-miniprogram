@@ -133,10 +133,12 @@ const IndexPage = () => {
         res = await getCloudCurrentPrice(province)
       } else {
         console.log('使用 API 调用')
-        res = await Network.request({
+        const networkRes = await Network.request({
           url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
           method: 'GET'
         })
+        // 从 Network.request 的返回中提取实际的响应数据
+        res = networkRes.data
       }
 
       console.log('油价数据响应:', res)
@@ -146,9 +148,17 @@ const IndexPage = () => {
         console.log('油价数据解析成功:', res.data)
       } else {
         console.error('油价数据格式错误:', res)
+        Taro.showToast({
+          title: '数据加载失败',
+          icon: 'none'
+        })
       }
     } catch (error) {
       console.error('获取油价数据失败:', error)
+      Taro.showToast({
+        title: '网络请求失败',
+        icon: 'none'
+      })
     } finally {
       setLoading(false)
     }
@@ -165,10 +175,12 @@ const IndexPage = () => {
         res = await getCloudProvinceList()
       } else {
         console.log('使用 API 调用')
-        res = await Network.request({
+        const networkRes = await Network.request({
           url: '/api/oil-price/provinces',
           method: 'GET'
         })
+        // 从 Network.request 的返回中提取实际的响应数据
+        res = networkRes.data
       }
 
       if (res?.code === 200 && res?.data) {

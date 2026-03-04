@@ -523,14 +523,11 @@ export class OilPriceService implements OnModuleInit {
     this.loadPriceCache() // 加载价格缓存
     this.loadAdjustmentCalendar() // 加载调价日历
     await this.fetchRealOilPrices()
-    this.recordDailyPrice() // 记录今日价格
+    await this.recordDailyPrice() // 记录今日价格
     this.checkAndRecordAdjustment() // 检查今天是否是调价日期并记录调价
 
     // 预加载节假日数据
     await this.preloadHolidayData()
-
-    // 设置定时任务，每天凌晨更新节假日数据
-    this.scheduleHolidayDataUpdate()
 
     // 设置定时任务，每天凌晨记录价格
     this.scheduleDailyPriceUpdate()
@@ -551,13 +548,13 @@ export class OilPriceService implements OnModuleInit {
     this.logger.log(`📅 每日价格记录定时任务已设置，将在 ${Math.floor(msUntilMidnight / 1000 / 60)} 分钟后首次执行`)
 
     // 定时执行，每天凌晨记录价格
-    setInterval(() => {
-      this.recordDailyPrice()
+    setInterval(async () => {
+      await this.recordDailyPrice()
     }, 24 * 60 * 60 * 1000) // 每24小时执行一次
 
     // 首次执行（明天凌晨）
-    setTimeout(() => {
-      this.recordDailyPrice()
+    setTimeout(async () => {
+      await this.recordDailyPrice()
     }, msUntilMidnight)
   }
 
@@ -755,10 +752,15 @@ export class OilPriceService implements OnModuleInit {
     }
   }
 
-  // 记录每日价格
-  private recordDailyPrice() {
+  // 记录每日价格（每天凌晨执行）
+  private async recordDailyPrice() {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
+
+    // 🆕 每天凌晨强制刷新价格数据，确保获取最新价格
+    // 必须在检查"今天是否已记录"之前刷新，否则不会刷新
+    this.logger.log(`📅 每日价格记录：开始刷新价格数据...`)
+    await this.fetchRealOilPrices(true) // 传入 true，强制刷新
 
     // 检查今天是否已经记录过（检查任意城市的记录即可）
     const existingRecord = this.dailyHistoryData.find(record => record.date === todayStr)
@@ -936,17 +938,18 @@ export class OilPriceService implements OnModuleInit {
   }
 
   // 从真实数据源获取油价数据
-  private async fetchRealOilPrices() {
+  private async fetchRealOilPrices(forceRefresh: boolean = false) {
     // 检查缓存是否有效（避免重复调用API）
-    if (this.dataCache.pricesFetched && !this.shouldRefreshData()) {
+    // forceRefresh 为 true 时，强制刷新，忽略缓存
+    if (!forceRefresh && this.dataCache.pricesFetched && !this.shouldRefreshData()) {
       const now = new Date()
       const daysRemaining = Math.ceil((this.dataCache.validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       this.logger.log(`📦 使用缓存数据（有效期还有 ${daysRemaining} 天），跳过API调用`)
       return
     }
 
-    // 缓存已过期或无效，调用API获取新数据
-    this.logger.log('🔄 缓存已过期，开始获取新数据...')
+    // 缓存已过期或无效，或者强制刷新，调用API获取新数据
+    this.logger.log(`🔄 ${forceRefresh ? '强制刷新' : '缓存已过期'}，开始获取新数据...`)
 
     // 优先使用天行数据 API
     const tianapiKey = process.env.TIANAPI_KEY
@@ -1360,38 +1363,6 @@ export class OilPriceService implements OnModuleInit {
   }
 
   /**
-   * 设置定时任务，每天凌晨更新节假日数据
-   */
-  private scheduleHolidayDataUpdate() {
-    const tianapiKey = process.env.TIANAPI_KEY
-    if (!tianapiKey) {
-      this.logger.warn('未配置天聚数行API Key，跳过节假日数据定时更新')
-      return
-    }
-
-    // 计算距离第二天凌晨的时间
-    const now = new Date()
-    const tomorrow = new Date(now)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    tomorrow.setHours(0, 0, 0, 0)
-    const delay = tomorrow.getTime() - now.getTime()
-
-    // 设置定时任务
-    setTimeout(async () => {
-      this.logger.log('开始更新节假日数据...')
-      await this.preloadHolidayData()
-
-      // 设置每天凌晨更新
-      setInterval(async () => {
-        this.logger.log('开始更新节假日数据...')
-        await this.preloadHolidayData()
-      }, 24 * 60 * 60 * 1000) // 每24小时更新一次
-    }, delay)
-
-    this.logger.log(`节假日数据定时更新任务已设置，将在 ${delay / 1000} 秒后首次执行`)
-  }
-
-  /**
    * 从API查询指定日期是否为节假日
    * 优先使用缓存，缓存未命中时调用API
    * @param date 日期对象
@@ -1700,10 +1671,8 @@ export class OilPriceService implements OnModuleInit {
         // 检查是否是省份名称（通过映射表查找）
         const provinceName = cityToProvinceMap[cityName] || cityName
 
-        // 如果这个城市/省份有价格数据，用它来代表该省的价格
-        if (!this.realProvincePrices[provinceName]) {
-          this.realProvincePrices[provinceName] = { ...cityPrice }
-        }
+        // 用这个城市/省份的价格数据代表该省的价格（直接覆盖，确保使用最新API数据）
+        this.realProvincePrices[provinceName] = { ...cityPrice }
       })
 
       // 加载历史数据（从文件读取）

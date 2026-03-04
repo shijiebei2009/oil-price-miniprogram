@@ -1974,7 +1974,8 @@ export class OilPriceService implements OnModuleInit {
     const mainCity = CITIES.find(c => c.province === province) || CITIES[0]
 
     // 获取最新的历史数据（上一次调价）- 按省市筛选
-    const latestHistory = this.realHistoryData.find(r => r.province === province)
+    const provinceHistory = this.realHistoryData.filter(r => r.province === province)
+    const latestHistory = provinceHistory.length > 0 ? provinceHistory[0] : null
 
     // 计算涨跌（当前价格 - 上一次调价价格）
     const change92 = latestHistory ? provincePrice.gas92 - latestHistory.gas92 : 0
@@ -1987,25 +1988,25 @@ export class OilPriceService implements OnModuleInit {
         name: '92号汽油',
         price: provincePrice.gas92,
         previousPrice: latestHistory ? latestHistory.gas92 : provincePrice.gas92,
-        change: parseFloat(change92.toFixed(3))
+        change: parseFloat(change92.toFixed(2))
       },
       {
         name: '95号汽油',
         price: provincePrice.gas95,
         previousPrice: latestHistory ? latestHistory.gas95 : provincePrice.gas95,
-        change: parseFloat(change95.toFixed(3))
+        change: parseFloat(change95.toFixed(2))
       },
       {
         name: '98号汽油',
         price: provincePrice.gas98,
         previousPrice: latestHistory ? latestHistory.gas98 : provincePrice.gas98,
-        change: parseFloat(change98.toFixed(3))
+        change: parseFloat(change98.toFixed(2))
       },
       {
         name: '0号柴油',
         price: provincePrice.diesel0,
         previousPrice: latestHistory ? latestHistory.diesel0 : provincePrice.diesel0,
-        change: parseFloat(change0.toFixed(3))
+        change: parseFloat(change0.toFixed(2))
       },
     ]
 
@@ -2130,12 +2131,15 @@ export class OilPriceService implements OnModuleInit {
 
   // 获取历史价格数据
   // 参数 count 表示返回的调价记录次数（不是天数）
-  getHistoryPrice(count: number = 10): HistoryPriceData[] {
+  getHistoryPrice(count: number = 5, province: string = '北京市'): HistoryPriceData[] {
+    // 按省份筛选历史数据
+    const provinceHistory = this.realHistoryData.filter(r => r.province === province)
+
     // 限制最大查询次数（最多返回所有调价记录）
-    const maxCount = this.realHistoryData.length
+    const maxCount = provinceHistory.length
     const queryCount = Math.min(Math.max(1, count), maxCount)
 
-    return this.realHistoryData.slice(0, queryCount)
+    return provinceHistory.slice(0, queryCount)
   }
 
   // 获取每日价格历史数据

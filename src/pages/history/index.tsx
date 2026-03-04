@@ -19,14 +19,6 @@ const HISTORY_CACHE_KEY = 'oil_price_history_data'
 const HistoryPage = () => {
   const [loading, setLoading] = useState(true)
   const [historyData, setHistoryData] = useState<HistoryPriceData[]>([])
-  const [selectedRange, setSelectedRange] = useState(7)
-
-  const timeRanges = [
-    { label: '近5次', value: 5 },
-    { label: '近10次', value: 10 },
-    { label: '近15次', value: 15 },
-    { label: '全部', value: 20 },
-  ]
 
   // 从本地缓存加载历史数据
   const loadHistoryFromCache = async (): Promise<HistoryPriceData[] | null> => {
@@ -55,7 +47,7 @@ const HistoryPage = () => {
     }
   }
 
-  const loadHistoryData = async (count: number) => {
+  const loadHistoryData = async () => {
     try {
       setLoading(true)
 
@@ -70,7 +62,7 @@ const HistoryPage = () => {
 
       // 然后请求最新数据
       const res = await Network.request({
-        url: `/api/oil-price/history?count=${count}`,
+        url: '/api/oil-price/history',
         method: 'GET'
       })
 
@@ -101,11 +93,6 @@ const HistoryPage = () => {
     }
   }
 
-  const handleRangeChange = (range: number) => {
-    setSelectedRange(range)
-    loadHistoryData(range)
-  }
-
   const getChangeColor = (change: number) => {
     if (change > 0) return 'text-red-500'
     if (change < 0) return 'text-green-500'
@@ -122,31 +109,14 @@ const HistoryPage = () => {
   }
 
   useLoad(() => {
-    loadHistoryData(selectedRange)
+    loadHistoryData()
   })
 
   return (
     <ScrollView scrollY className="w-full h-screen bg-white">
-      {/* 页面标题和筛选器 */}
+      {/* 页面标题 */}
       <View className="bg-white px-4 py-3 border-b border-gray-100 sticky top-0 z-10 bg-opacity-95">
-        <View className="flex flex-row justify-between items-center mb-3">
-          <Text className="text-base font-bold text-gray-900">历史价格</Text>
-          <View className="flex flex-row gap-2">
-            {timeRanges.map((range, index) => (
-              <View
-                key={index}
-                className={`rounded-lg px-3 py-1.5 ${selectedRange === range.value ? 'bg-blue-600' : 'bg-gray-100'}`}
-                onClick={() => handleRangeChange(range.value)}
-              >
-                <Text
-                  className={`text-sm font-medium ${selectedRange === range.value ? 'text-white' : 'text-gray-600'}`}
-                >
-                  {range.label}
-                </Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        <Text className="text-base font-bold text-gray-900">历史价格</Text>
       </View>
 
       {/* 走势图区域 - 固定高度 400px */}

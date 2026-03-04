@@ -2,6 +2,7 @@ import { View, Text } from '@tarojs/components'
 import Taro, { useLoad, useDidShow, useShareAppMessage, useShareTimeline, navigateTo } from '@tarojs/taro'
 import { useState } from 'react'
 import { Network } from '@/network'
+import { getCurrentPrice as getCloudCurrentPrice, getProvinceList as getCloudProvinceList, isCloudEnv } from '@/utils/cloud'
 import CityPicker from '@/components/CityPicker'
 import './index.css'
 
@@ -124,18 +125,27 @@ const IndexPage = () => {
       setLoading(true)
       console.log('开始获取油价数据，省份:', province)
 
-      const res = await Network.request({
-        url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
-        method: 'GET'
-      })
+      let res: any
 
-      console.log('油价数据响应:', res.data)
-
-      if (res.data?.code === 200 && res.data?.data) {
-        setPriceData(res.data.data)
-        console.log('油价数据解析成功:', res.data.data)
+      // 根据环境选择调用方式
+      if (isCloudEnv()) {
+        console.log('使用云函数调用')
+        res = await getCloudCurrentPrice(province)
       } else {
-        console.error('油价数据格式错误:', res.data)
+        console.log('使用 API 调用')
+        res = await Network.request({
+          url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
+          method: 'GET'
+        })
+      }
+
+      console.log('油价数据响应:', res)
+
+      if (res?.code === 200 && res?.data) {
+        setPriceData(res.data)
+        console.log('油价数据解析成功:', res.data)
+      } else {
+        console.error('油价数据格式错误:', res)
       }
     } catch (error) {
       console.error('获取油价数据失败:', error)
@@ -147,13 +157,22 @@ const IndexPage = () => {
   // 加载城市列表
   const loadCityList = async () => {
     try {
-      const res = await Network.request({
-        url: '/api/oil-price/provinces',
-        method: 'GET'
-      })
+      let res: any
 
-      if (res.data?.code === 200 && res.data?.data) {
-        setCityList(res.data.data)
+      // 根据环境选择调用方式
+      if (isCloudEnv()) {
+        console.log('使用云函数调用')
+        res = await getCloudProvinceList()
+      } else {
+        console.log('使用 API 调用')
+        res = await Network.request({
+          url: '/api/oil-price/provinces',
+          method: 'GET'
+        })
+      }
+
+      if (res?.code === 200 && res?.data) {
+        setCityList(res.data)
       }
     } catch (error) {
       console.error('获取城市列表失败:', error)

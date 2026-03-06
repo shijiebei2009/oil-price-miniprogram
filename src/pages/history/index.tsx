@@ -112,7 +112,6 @@ const HistoryPage = () => {
   useLoad((options) => {
     // 从页面参数获取省份
     const province = options?.province || '上海市'
-    console.log('历史价格页面参数:', { province, options })
     setCurrentProvince(province)
     loadHistoryData(province)
   })

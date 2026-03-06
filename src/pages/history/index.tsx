@@ -63,7 +63,7 @@ const HistoryPage = () => {
 
       // 然后请求最新数据，传递省份参数
       const res = await Network.request({
-        url: `/api/oil-price/history?province=${encodeURIComponent(province)}`,
+        url: `/api/oil-price/history?province=${province}`,
         method: 'GET'
       })
 

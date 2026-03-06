@@ -280,7 +280,7 @@ const IndexPage = () => {
   // 导航到历史价格页面
   const navigateToHistory = () => {
     navigateTo({
-      url: `/pages/history/index?province=${encodeURIComponent(currentCity)}`
+      url: `/pages/history/index?province=${currentCity}`
     })
   }
 

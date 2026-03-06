@@ -110,8 +110,8 @@ const HistoryPage = () => {
   }
 
   useLoad((options) => {
-    // 从页面参数获取省份
-    const province = options?.province || '上海市'
+    // 从页面参数获取省份，需要解码 URL 参数
+    const province = options?.province ? decodeURIComponent(options.province) : '上海市'
     setCurrentProvince(province)
     loadHistoryData(province)
   })

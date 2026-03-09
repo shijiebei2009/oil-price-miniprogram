@@ -1839,10 +1839,17 @@ export class OilPriceService implements OnModuleInit {
     this.saveHistoryData()
   }
 
-  // 检测价格变更并记录到历史数据
+  // 检测价格变更并记录到历史数据（仅在调价日记录）
   private detectAndRecordPriceChange() {
+    // 检查今天是否是调价日
+    if (!this.isAdjustmentDay()) {
+      this.logger.log('✅ 今天不是调价日，不记录历史数据')
+      return
+    }
+
     if (this.realHistoryData.length === 0) {
       // 如果没有历史数据，添加当前价格
+      this.logger.log('📊 首次记录调价历史')
       this.recordCurrentPrice()
       return
     }
@@ -1975,6 +1982,8 @@ export class OilPriceService implements OnModuleInit {
 
     // 获取最新的历史数据（上一次调价）- 按省市筛选
     const provinceHistory = this.realHistoryData.filter(r => r.province === province)
+    // 按日期降序排序，获取最近的调价记录
+    provinceHistory.sort((a, b) => b.date.localeCompare(a.date))
     const latestHistory = provinceHistory.length > 0 ? provinceHistory[0] : null
 
     // 计算涨跌（当前价格 - 上一次调价价格）

@@ -819,6 +819,13 @@ export class OilPriceService implements OnModuleInit {
     // 检查今天是否是调价日期
     // 注意：调价日期格式是 "YYYY-MM-DD"
     if (todayStr === nextAdjustmentDate) {
+      // 🆕 检查当前时间是否已过 24 时
+      const currentHour = today.getHours()
+      if (currentHour < 24) {
+        this.logger.log(`⏰ 今日是调价日期但未到 24 时，暂不记录: ${todayStr} (${currentHour}点)`)
+        return
+      }
+
       // 检查今天是否已经记录过调价
       const existingRecord = this.realHistoryData.find(record => record.date === todayStr)
 
@@ -827,8 +834,8 @@ export class OilPriceService implements OnModuleInit {
         return
       }
 
-      // 今天是调价日期，记录调价
-      this.logger.log(`📅 检测到今日是调价日期: ${todayStr}`)
+      // 今天是调价日期且已过 24 时，记录调价
+      this.logger.log(`📅 检测到今日是调价日期且已过 24 时，记录调价: ${todayStr}`)
       this.recordAdjustment(todayStr)
     } else {
       this.logger.log(`✅ 今日不是调价日期: ${todayStr}，下次调价: ${nextAdjustmentDate}`)
@@ -1839,11 +1846,18 @@ export class OilPriceService implements OnModuleInit {
     this.saveHistoryData()
   }
 
-  // 检测价格变更并记录到历史数据（仅在调价日记录）
+  // 检测价格变更并记录到历史数据（仅在调价日 24 时后记录）
   private detectAndRecordPriceChange() {
     // 检查今天是否是调价日
     if (!this.isAdjustmentDay()) {
       this.logger.log('✅ 今天不是调价日，不记录历史数据')
+      return
+    }
+
+    // 检查当前时间是否已过 24 时
+    const now = new Date()
+    if (now.getHours() < 24) {
+      this.logger.log('✅ 今天是调价日，但还未到 24 时，不记录历史数据')
       return
     }
 
@@ -2377,9 +2391,23 @@ export class OilPriceService implements OnModuleInit {
       }
     }
 
-    // 计算距离下次调价的天数（使用 today 00:00:00 作为基准）
-    const adjustmentDate = new Date(nextAdjustment.date)
-    const daysRemaining = Math.ceil((adjustmentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    // 计算距离下次调价的天数
+    // 如果今天是调价日，且当前时间还未到 24 时，则下次调价为今天 24 时
+    // 如果今天不是调价日，或已经过了今天 24 时，则下次调价为下一个调价日
+    const nowHours = now.getHours()
+    const nowMinutes = now.getMinutes()
+    const isAdjustmentDay = nextAdjustment.date === nowStr
+
+    let daysRemaining: number
+
+    if (isAdjustmentDay && nowHours < 24) {
+      // 今天是调价日，还未到 24 时
+      daysRemaining = 0
+    } else {
+      // 今天不是调价日，或已经过了今天 24 时
+      const adjustmentDate = new Date(nextAdjustment.date)
+      daysRemaining = Math.ceil((adjustmentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    }
     this.logger.log(`📅 当前日期: ${nowStr} ${now.getHours()}:${now.getMinutes()}`)
     this.logger.log(`📅 下次调价日期: ${nextAdjustment.date} ${nextAdjustment.time}`)
     this.logger.log(`📅 距离下次调价天数: ${daysRemaining} 天`)

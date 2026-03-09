@@ -447,7 +447,10 @@ const IndexPage = () => {
                   <View className="flex items-center gap-2">
                     <View className="w-2 h-2 rounded-full bg-red-500"></View>
                     <Text className="text-xs text-gray-500">
-                      距离调价还有 {priceData.nextAdjustment.daysRemaining} 天
+                      {priceData.nextAdjustment.daysRemaining === 0
+                        ? '今天 24 时'
+                        : `距离调价还有 ${priceData.nextAdjustment.daysRemaining} 天`
+                      }
                     </Text>
                   </View>
                 </View>

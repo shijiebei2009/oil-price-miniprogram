@@ -2135,6 +2135,9 @@ export class OilPriceService implements OnModuleInit {
     // 按省份筛选历史数据
     const provinceHistory = this.realHistoryData.filter(r => r.province === province)
 
+    // 按日期降序排序（最近的调价在前）
+    provinceHistory.sort((a, b) => b.date.localeCompare(a.date))
+
     // 限制最大查询次数（最多返回所有调价记录）
     const maxCount = provinceHistory.length
     const queryCount = Math.min(Math.max(1, count), maxCount)

@@ -178,7 +178,7 @@ const HistoryPage = () => {
               <View key={index} className="bg-white border border-gray-100 rounded-xl p-4 mb-3">
                 <View className="flex flex-row items-center justify-between mb-3">
                   <Text className="block text-sm font-semibold text-gray-900">
-                    {item.date}
+                    {item.date} 24时
                   </Text>
                   <Text className={`block text-sm font-semibold ${getChangeColor(item.change)}`}>
                     {getChangeDisplay(item.change)}

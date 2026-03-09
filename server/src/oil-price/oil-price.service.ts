@@ -2327,10 +2327,14 @@ export class OilPriceService implements OnModuleInit {
       }
     }
 
+    // 将当前时间重置为当天的 00:00:00，用于比较日期（避免因时间部分导致当天调价被跳过）
+    const today = new Date(now)
+    today.setHours(0, 0, 0, 0)
+
     // 在当前年度的调价日历中，找到第一个大于等于当前日期的调价日期
     const nextAdjustment = currentYearCalendar.find(adjustment => {
       const adjustmentDate = new Date(adjustment.date)
-      return adjustmentDate >= now
+      return adjustmentDate >= today
     })
 
     // 如果没有找到未来的调价日期（当前日期已超过当前年度所有调价日期），尝试查找下一年度
@@ -2361,9 +2365,10 @@ export class OilPriceService implements OnModuleInit {
       }
     }
 
-    // 计算距离下次调价的天数
+    // 计算距离下次调价的天数（使用 today 00:00:00 作为基准）
     const adjustmentDate = new Date(nextAdjustment.date)
-    const daysRemaining = Math.ceil((adjustmentDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const daysRemaining = Math.ceil((adjustmentDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    this.logger.log(`📅 当前日期: ${nowStr} ${now.getHours()}:${now.getMinutes()}`)
     this.logger.log(`📅 下次调价日期: ${nextAdjustment.date} ${nextAdjustment.time}`)
     this.logger.log(`📅 距离下次调价天数: ${daysRemaining} 天`)
 

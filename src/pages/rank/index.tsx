@@ -1,5 +1,6 @@
 import { View, Text, ScrollView } from '@tarojs/components'
 import { useState, useEffect } from 'react'
+import Taro from '@tarojs/taro'
 import { Network } from '@/network'
 import './index.css'
 

@@ -813,7 +813,7 @@ export class OilPriceService implements OnModuleInit {
     const todayStr = today.toISOString().split('T')[0]
 
     // 获取下次调价日期信息
-    const nextAdjustment = this.getMockNextAdjustment()
+    const nextAdjustment = this.calculateNextAdjustment()
     const nextAdjustmentDate = nextAdjustment.date
 
     // 检查今天是否是调价日期
@@ -1956,7 +1956,7 @@ export class OilPriceService implements OnModuleInit {
 
     return {
       currentPrices,
-      nextAdjustment: this.getMockNextAdjustment(),
+      nextAdjustment: this.calculateNextAdjustment(),
       updateTime,
       cityName: cityInfo.name,
       provinceName: cityInfo.province,
@@ -2016,7 +2016,7 @@ export class OilPriceService implements OnModuleInit {
 
     return {
       currentPrices,
-      nextAdjustment: this.getMockNextAdjustment(mainCity.name, province),
+      nextAdjustment: this.calculateNextAdjustment(mainCity.name, province),
       updateTime,
       cityName: provinceInfo.name,
       provinceName: provinceInfo.name,
@@ -2292,7 +2292,7 @@ export class OilPriceService implements OnModuleInit {
    * @param city 城市名称（默认北京）
    * @param province 省份名称（默认北京市）
    */
-  private getMockNextAdjustment(city: string = '北京', province: string = '北京市'): NextAdjustment {
+  private calculateNextAdjustment(city: string = '北京', province: string = '北京市'): NextAdjustment {
     const now = new Date()
     const nowStr = now.toISOString().split('T')[0]
     this.logger.log(`📅 当前日期: ${nowStr}`)

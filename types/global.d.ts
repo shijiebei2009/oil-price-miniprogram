@@ -4,6 +4,9 @@ declare const PROJECT_DOMAIN: string | undefined;
 declare const TARO_ENV: "weapp" | "h5" | undefined;
 declare const TARO_APP_WECHAT_SUBSCRIBE_TEMPLATE_ID: string | undefined;
 
+// 微信小程序全局对象
+declare const wx: any;
+
 declare module '*.png';
 declare module '*.gif';
 declare module '*.jpg';
@@ -23,11 +26,9 @@ declare namespace NodeJS {
     TARO_ENV: 'weapp' | 'swan' | 'alipay' | 'h5' | 'rn' | 'tt' | 'qq' | 'jd' | 'harmony' | 'jdrn'
     /**
      * 当前构建的小程序 appid
-     * @description 若不同环境有不同的小程序，可通过在 env 文件中配置环境变量`TARO_APP_ID`来方便快速切换 appid， 而不必手动去修改 dist/project.config.json 文件
+     * @description 若不同环境有不同小程序，可通过在 env 文件中配置环境变量`TARO_APP_ID`来方便快速切换 appid， 而不必手动去修改 dist/project.config.json 文件
      * @see https://taro-docs.jd.com/docs/next/env-mode-config#特殊环境变量-taro_app_id
      */
     TARO_APP_ID: string
   }
 }
-
-

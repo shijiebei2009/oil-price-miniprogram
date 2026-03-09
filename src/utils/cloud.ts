@@ -1,10 +1,11 @@
 /**
  * 微信云开发网络请求封装
  */
+import Taro from '@tarojs/taro'
 
 // 检测是否在云开发环境
 export const isCloudEnv = () => {
-  return typeof wx !== 'undefined' && wx.cloud
+  return Taro.getEnv() === Taro.ENV_TYPE.WEAPP && typeof wx !== 'undefined' && wx.cloud
 }
 
 // 云函数调用

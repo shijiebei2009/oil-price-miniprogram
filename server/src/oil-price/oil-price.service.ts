@@ -2390,31 +2390,73 @@ export class OilPriceService implements OnModuleInit {
 
       const currentPrice = this.realCityPrices[city]?.gas92 || this.realCityPrices['北京']?.gas92 || 7.5
       const lastPrice = lastAdjustment.gas92
-      const priceDiff = currentPrice - lastPrice
 
       this.logger.log(`📊 [${province}-${city}] 上次调价日期: ${lastAdjustment.date}`)
       this.logger.log(`📊 [${province}-${city}] 上次调价价格: ${lastPrice} 元/升`)
       this.logger.log(`📊 [${province}-${city}] 当前价格: ${currentPrice} 元/升`)
-      this.logger.log(`📊 [${province}-${city}] 价格差: ${priceDiff.toFixed(3)} 元/升`)
+
+      // 🆕 基于每日价格平均值的预测算法（更科学）
+      // 1. 获取从上次调价后到当前时间的每日价格数据
+      // 2. 计算这些每日价格的平均值
+      // 3. 将平均值与上次调价价格对比，预测涨跌方向和幅度
+
+      const dailyPrices = this.dailyHistoryData.filter(d =>
+        d.city === city &&
+        d.province === province &&
+        new Date(d.date) > new Date(lastAdjustment.date) &&
+        new Date(d.date) <= now
+      )
+
+      let priceDiff: number
+      let avgPrice: number
+
+      if (dailyPrices.length > 0) {
+        // 计算每日价格的平均值
+        const sumGas92 = dailyPrices.reduce((sum, d) => sum + d.gas92, 0)
+        avgPrice = sumGas92 / dailyPrices.length
+        priceDiff = avgPrice - lastPrice
+
+        this.logger.log(`📊 [${province}-${city}] 上次调价日期: ${lastAdjustment.date}`)
+        this.logger.log(`📊 [${province}-${city}] 上次调价价格: ${lastPrice} 元/升`)
+        this.logger.log(`📊 [${province}-${city}] 当前价格: ${currentPrice} 元/升`)
+        this.logger.log(`📊 [${province}-${city}] 每日价格数据: ${dailyPrices.length} 条`)
+        this.logger.log(`📊 [${province}-${city}] 每日平均价格: ${avgPrice.toFixed(3)} 元/升`)
+        this.logger.log(`📊 [${province}-${city}] 平均价格差: ${priceDiff.toFixed(3)} 元/升`)
+      } else {
+        // 降级方案：使用当前价格与上次调价价格的对比
+        priceDiff = currentPrice - lastPrice
+        avgPrice = currentPrice
+
+        this.logger.log(`📊 [${province}-${city}] 上次调价日期: ${lastAdjustment.date}`)
+        this.logger.log(`📊 [${province}-${city}] 上次调价价格: ${lastPrice} 元/升`)
+        this.logger.log(`📊 [${province}-${city}] 当前价格: ${currentPrice} 元/升`)
+        this.logger.log(`📊 [${province}-${city}] 价格差: ${priceDiff.toFixed(3)} 元/升`)
+        this.logger.warn(`⚠️  [${province}-${city}] 暂无每日价格数据，使用当前价格预测`)
+      }
 
       // 根据价格差预测下次调价幅度
-      // 调价逻辑：价格走势延续趋势，当前价格比上次调价高说明在上涨，下次可能继续上涨
-      // 阈值设为 0.1 元/升
-      if (priceDiff > 0.1) {
+      // 阈值设为 0.05 元/升（更敏感）
+      if (priceDiff > 0.05) {
         direction = 'up'
-        // 价格上涨，预计下次调价可能继续上涨，幅度约为当前价格差的50%-80%
-        expectedChange = Math.abs(priceDiff) * 0.65
-        trend = `当前价格比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，价格呈上涨趋势，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
-      } else if (priceDiff < -0.1) {
+        // 平均价格上涨，预计下次调价可能上涨，幅度约为平均价格差的70%-90%
+        expectedChange = Math.abs(priceDiff) * 0.8
+        trend = dailyPrices.length > 0
+          ? `上次调价后平均价格为 ${avgPrice.toFixed(3)} 元/升，比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，价格呈上涨趋势，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
+          : `当前价格比上次调价上涨 ${priceDiff.toFixed(3)} 元/升，价格呈上涨趋势，预计下次调价可能上涨 ${expectedChange.toFixed(3)} 元/升左右`
+      } else if (priceDiff < -0.05) {
         direction = 'down'
-        // 价格下跌，预计下次调价可能继续下跌，幅度约为当前价格差的50%-80%
-        expectedChange = Math.abs(priceDiff) * 0.65
-        trend = `当前价格比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，价格呈下跌趋势，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
+        // 平均价格下跌，预计下次调价可能下跌，幅度约为平均价格差的70%-90%
+        expectedChange = Math.abs(priceDiff) * 0.8
+        trend = dailyPrices.length > 0
+          ? `上次调价后平均价格为 ${avgPrice.toFixed(3)} 元/升，比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，价格呈下跌趋势，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
+          : `当前价格比上次调价下跌 ${Math.abs(priceDiff).toFixed(3)} 元/升，价格呈下跌趋势，预计下次调价可能下跌 ${expectedChange.toFixed(3)} 元/升左右`
       } else {
         direction = 'stable'
         // 价格变化不大，预计下次调价可能持平
         expectedChange = 0
-        trend = `当前价格与上次调价价格接近（相差 ${priceDiff.toFixed(3)} 元/升），预计下次调价可能持平`
+        trend = dailyPrices.length > 0
+          ? `上次调价后平均价格为 ${avgPrice.toFixed(3)} 元/升，与上次调价价格接近（相差 ${priceDiff.toFixed(3)} 元/升），预计下次调价可能持平`
+          : `当前价格与上次调价价格接近（相差 ${priceDiff.toFixed(3)} 元/升），预计下次调价可能持平`
       }
     } else {
       // 如果没有历史数据，使用基于近期历史调价趋势的预测（降级方案）

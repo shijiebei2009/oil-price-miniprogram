@@ -529,9 +529,6 @@ export class OilPriceService implements OnModuleInit {
     // 预加载节假日数据
     await this.preloadHolidayData()
 
-    // 模拟调价记录流程（用于测试）
-    await this.simulateAdjustmentRecord('2026-03-09')
-
     // 设置定时任务，每天凌晨记录价格
     this.scheduleDailyPriceUpdate()
 
@@ -646,46 +643,6 @@ export class OilPriceService implements OnModuleInit {
     } catch (error) {
       this.logger.error('保存每日价格历史失败:', error.message)
     }
-  }
-
-  // 模拟调价记录流程（用于测试）
-  private async simulateAdjustmentRecord(date: string) {
-    // 检查是否已经记录过调价
-    const existingRecord = this.realHistoryData.find(record => record.date === date)
-    if (existingRecord) {
-      this.logger.log(`✅ 调价已记录，跳过模拟: ${date}`)
-      return
-    }
-
-    this.logger.log(`📅 开始模拟调价记录流程: ${date}`)
-
-    // 添加模拟的每日价格记录（使用当前 API 价格）
-    const dailyRecords: HistoryPriceData[] = []
-
-    CITIES.forEach((city) => {
-      const cityPrice = this.realCityPrices[city.name]
-      if (!cityPrice) return
-
-      dailyRecords.push({
-        date: date,
-        province: city.province,
-        city: city.name,
-        gas92: cityPrice.gas92,
-        gas95: cityPrice.gas95,
-        gas98: cityPrice.gas98,
-        diesel0: cityPrice.diesel0,
-        change: 0
-      })
-    })
-
-    // 添加到每日价格历史
-    this.dailyHistoryData.unshift(...dailyRecords)
-    this.saveDailyHistoryData()
-
-    this.logger.log(`✅ 已添加模拟的每日价格记录: ${date}, 共 ${dailyRecords.length} 个城市`)
-
-    // 检查是否需要记录调价
-    this.checkAndRecordAdjustment()
   }
 
   // 加载价格缓存（避免每次重启调用API）

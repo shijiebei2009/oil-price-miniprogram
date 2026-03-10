@@ -811,34 +811,55 @@ export class OilPriceService implements OnModuleInit {
   private checkAndRecordAdjustment() {
     const today = new Date()
     const todayStr = today.toISOString().split('T')[0]
+    const currentHour = today.getHours()
 
-    // 获取下次调价日期信息
-    const nextAdjustment = this.calculateNextAdjustment()
-    const nextAdjustmentDate = nextAdjustment.date
+    // 🆕 获取最近的调价日期（可能是今天或之前的日期）
+    const recentAdjustmentDate = this.getMostRecentAdjustmentDate()
 
-    // 检查今天是否是调价日期
-    // 注意：调价日期格式是 "YYYY-MM-DD"
-    if (todayStr === nextAdjustmentDate) {
-      // 🆕 检查当前时间是否已过 24 时
-      const currentHour = today.getHours()
+    if (!recentAdjustmentDate) {
+      this.logger.log(`✅ 未找到最近的调价日期，跳过调价记录检查`)
+      return
+    }
+
+    this.logger.log(`📅 当前日期: ${todayStr} ${currentHour}点`)
+    this.logger.log(`📅 最近的调价日期: ${recentAdjustmentDate}`)
+
+    // 检查最近的调价日期是否是今天
+    if (recentAdjustmentDate === todayStr) {
+      // 今天是调价日
       if (currentHour < 24) {
+        // 未到 24 时，暂不记录
         this.logger.log(`⏰ 今日是调价日期但未到 24 时，暂不记录: ${todayStr} (${currentHour}点)`)
         return
       }
 
       // 检查今天是否已经记录过调价
       const existingRecord = this.realHistoryData.find(record => record.date === todayStr)
-
       if (existingRecord) {
         this.logger.log(`✅ 今日调价已记录，跳过: ${todayStr}`)
         return
       }
 
-      // 今天是调价日期且已过 24 时，记录调价
+      // 已过 24 时，记录调价
       this.logger.log(`📅 检测到今日是调价日期且已过 24 时，记录调价: ${todayStr}`)
       this.recordAdjustment(todayStr)
     } else {
-      this.logger.log(`✅ 今日不是调价日期: ${todayStr}，下次调价: ${nextAdjustmentDate}`)
+      // 今天不是调价日，检查是否已经过了最近的调价日
+      const recentDate = new Date(recentAdjustmentDate)
+      const currentDate = new Date(todayStr)
+
+      if (currentDate > recentDate) {
+        // 今天已经过了最近的调价日
+        const existingRecord = this.realHistoryData.find(record => record.date === recentAdjustmentDate)
+        if (existingRecord) {
+          this.logger.log(`✅ 调价已记录，跳过: ${recentAdjustmentDate}`)
+        } else {
+          this.logger.log(`📅 检测到已过调价日，记录调价: ${recentAdjustmentDate}`)
+          this.recordAdjustment(recentAdjustmentDate)
+        }
+      } else {
+        this.logger.log(`✅ 今日不是调价日期: ${todayStr}，下次调价: ${recentAdjustmentDate}`)
+      }
     }
   }
 
@@ -2308,6 +2329,66 @@ export class OilPriceService implements OnModuleInit {
   }
 
   // ==================== 旧的调价日期计算方法（已废弃） ====================
+
+  /**
+   * 获取最近的调价日期（可能是今天或之前的日期）
+   * 说明：
+   * - 如果今天是调价日，返回今天
+   * - 如果今天不是调价日，返回最近一次已经过的调价日期
+   * @returns 最近调价日期（格式：YYYY-MM-DD）
+   */
+  private getMostRecentAdjustmentDate(): string {
+    const now = new Date()
+    const nowStr = now.toISOString().split('T')[0]
+    const today = new Date(now)
+    today.setHours(0, 0, 0, 0)
+
+    // 检查调价日历数据是否可用
+    if (!this.adjustmentCalendarData || !this.adjustmentCalendarData.calendars) {
+      this.logger.warn('⚠️ 调价日历数据不可用')
+      return ''
+    }
+
+    const currentYear = now.getFullYear().toString()
+    const currentYearCalendar = this.adjustmentCalendarData.calendars[currentYear]
+
+    if (!currentYearCalendar || currentYearCalendar.length === 0) {
+      this.logger.warn(`⚠️ 未找到 ${currentYear} 年的调价日历`)
+      return ''
+    }
+
+    // 查找最近的调价日期（可能是今天或之前的日期）
+    // 1. 先找大于等于今天的第一个调价日期
+    const futureAdjustment = currentYearCalendar.find(adjustment => {
+      const adjustmentDate = new Date(adjustment.date)
+      return adjustmentDate >= today
+    })
+
+    // 2. 找到这个调价日期在日历中的索引
+    const futureIndex = currentYearCalendar.findIndex(adjustment => {
+      const adjustmentDate = new Date(adjustment.date)
+      return adjustmentDate >= today
+    })
+
+    // 3. 如果第一个调价日期就是今天，返回今天
+    if (futureAdjustment && futureAdjustment.date === nowStr) {
+      return nowStr
+    }
+
+    // 4. 否则，返回前一个调价日期
+    if (futureIndex > 0) {
+      return currentYearCalendar[futureIndex - 1].date
+    }
+
+    // 5. 如果当前年度的所有调价日期都已过，返回最后一个调价日期
+    const lastAdjustment = currentYearCalendar[currentYearCalendar.length - 1]
+    if (new Date(lastAdjustment.date) < today) {
+      return lastAdjustment.date
+    }
+
+    // 6. 如果还没到第一个调价日期，返回空字符串（无历史调价）
+    return ''
+  }
 
   /**
    * 预测下次调价信息（基于2026年官方调价日历）

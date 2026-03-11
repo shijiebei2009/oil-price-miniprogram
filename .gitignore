@@ -44,3 +44,7 @@ pnpm-debug.log*
 
 # Key
 # key/
+
+# Data cache (运行时生成的缓存数据，不应提交)
+server/data/oil-price-cache.json
+server/data/daily-oil-price-history.json

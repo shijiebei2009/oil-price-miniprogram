@@ -45,6 +45,7 @@ const IndexPage = () => {
   const [currentCity, setCurrentCity] = useState('上海市')
   const [showCityPicker, setShowCityPicker] = useState(false)
   const [cityList, setCityList] = useState<CityItem[]>([])
+  const [error, setError] = useState<{ message: string; details?: string } | null>(null)
 
   // 获取用户位置并转换为所在城市
   const getCurrentCity = async (): Promise<string> => {
@@ -107,8 +108,8 @@ const IndexPage = () => {
         console.error('逆地理编码失败:', res.data)
         return '上海市'
       }
-    } catch (error) {
-      console.error('获取位置失败:', error)
+    } catch (locError) {
+      console.error('获取位置失败:', locError)
       // 位置获取失败时，提示用户
       Taro.showToast({
         title: '位置获取失败，使用默认城市',
@@ -123,6 +124,7 @@ const IndexPage = () => {
   const loadPriceData = async (province?: string) => {
     try {
       setLoading(true)
+      setError(null)
       console.log('开始获取油价数据，省份:', province)
 
       let res: any
@@ -148,13 +150,21 @@ const IndexPage = () => {
         console.log('油价数据解析成功:', res.data)
       } else {
         console.error('油价数据格式错误:', res)
+        setError({
+          message: '数据加载失败',
+          details: `响应格式异常: ${JSON.stringify(res)}`
+        })
         Taro.showToast({
           title: '数据加载失败',
           icon: 'none'
         })
       }
-    } catch (error) {
-      console.error('获取油价数据失败:', error)
+    } catch (priceError) {
+      console.error('获取油价数据失败:', priceError)
+      setError({
+        message: '网络请求失败',
+        details: priceError instanceof Error ? priceError.message : String(priceError)
+      })
       Taro.showToast({
         title: '网络请求失败',
         icon: 'none'
@@ -186,8 +196,8 @@ const IndexPage = () => {
       if (res?.code === 200 && res?.data) {
         setCityList(res.data)
       }
-    } catch (error) {
-      console.error('获取城市列表失败:', error)
+    } catch (cityError) {
+      console.error('获取城市列表失败:', cityError)
     }
   }
 
@@ -207,7 +217,40 @@ const IndexPage = () => {
   }
 
   useLoad(async () => {
-    console.log('页面加载')
+    console.log('==========================================')
+    console.log('📱 页面加载 - 油价查询小程序')
+    console.log('==========================================')
+    
+    // 输出环境信息
+    const env = Taro.getEnv()
+    console.log('🌐 当前平台:', env)
+    console.log('📡 平台类型映射:', {
+      [Taro.ENV_TYPE.WEAPP]: '微信小程序',
+      'h5': 'H5',
+      'H5': 'H5',
+      [Taro.ENV_TYPE.RN]: 'React Native',
+      [Taro.ENV_TYPE.SWAN]: '百度小程序',
+      [Taro.ENV_TYPE.ALIPAY]: '支付宝小程序',
+      [Taro.ENV_TYPE.TT]: '字节跳动小程序',
+      [Taro.ENV_TYPE.JD]: '京东小程序',
+      [Taro.ENV_TYPE.QQ]: 'QQ小程序'
+    })
+
+    // 输出环境变量信息
+    console.log('⚙️ 环境变量配置:')
+    console.log('  - global.PROJECT_DOMAIN:', (globalThis as any).PROJECT_DOMAIN)
+    console.log('  - isCloudEnv():', isCloudEnv())
+
+    // 检测 Network 模块
+    console.log('🔧 Network 模块检测:')
+    console.log('  - Network.request:', typeof Network.request)
+    console.log('  - Network.uploadFile:', typeof Network.uploadFile)
+    console.log('  - Network.downloadFile:', typeof Network.downloadFile)
+
+    // 输出当前域名
+    console.log('🌍 当前请求域名:', (globalThis as any).PROJECT_DOMAIN || '未配置')
+
+    console.log('==========================================')
 
     // 先加载省份列表
     loadCityList()
@@ -216,7 +259,7 @@ const IndexPage = () => {
     const city = await getCurrentCity()
     if (city) {
       setCurrentCity(city)
-      console.log('自动定位到城市:', city)
+      console.log('📍 自动定位到城市:', city)
 
       // 保存城市信息到本地存储，供其他页面使用
       Taro.setStorageSync('userCity', city)
@@ -397,8 +440,44 @@ const IndexPage = () => {
           </View>
         )}
 
+        {/* 错误提示 */}
+        {!loading && error && (
+          <View className="bg-white rounded-2xl p-6 shadow-sm mb-4">
+            <View className="flex flex-col items-center">
+              <Text className="text-4xl mb-4">❌</Text>
+              <Text className="block text-lg font-semibold text-gray-900 mb-2">加载失败</Text>
+              <Text className="block text-sm text-gray-600 mb-4">{error.message}</Text>
+              
+              {error.details && (
+                <View className="w-full bg-red-50 rounded-lg p-3 mb-4">
+                  <Text className="block text-xs text-red-700 break-all">
+                    {error.details}
+                  </Text>
+                </View>
+              )}
+
+              <View className="w-full bg-blue-50 rounded-lg p-3">
+                <Text className="block text-xs text-blue-700 mb-2">💡 可能的原因：</Text>
+                <Text className="block text-xs text-blue-600">1. 网络连接异常，请检查网络</Text>
+                <Text className="block text-xs text-blue-600">2. 后端服务未启动</Text>
+                <Text className="block text-xs text-blue-600">3. 服务器域名配置错误</Text>
+              </View>
+
+              <View
+                className="mt-4 w-full bg-blue-500 rounded-lg py-3"
+                onClick={() => {
+                  setError(null)
+                  loadPriceData(currentCity)
+                }}
+              >
+                <Text className="block text-center text-white text-sm font-semibold">重试</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* 数据展示 */}
-        {!loading && priceData && (
+        {!loading && !error && priceData && (
           <View className="flex flex-col gap-3">
             {/* 当前油价卡片 */}
             <View className="bg-white rounded-2xl p-4 shadow-sm">

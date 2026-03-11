@@ -36,6 +36,7 @@
 ├── src/                      # 前端源码
 │   ├── pages/                # 页面组件
 │   ├── utils/                # 工具函数
+│   ├── network.ts            # 网络请求封装
 │   ├── app.ts                # 应用入口
 │   ├── app.config.ts         # 应用配置
 │   └── app.css               # 全局样式
@@ -685,3 +686,270 @@ create(@Body() body: unknown) {
   return this.userService.create(result.data);
 }
 ```
+
+
+## 常见问题排查
+
+### 网络请求失败（小程序端）
+
+**症状**: 微信小程序端显示"网络请求失败"
+
+**原因分析**:
+
+1. **服务器域名未配置**
+   - 微信小程序要求所有网络请求域名必须在后台配置
+   - 开发环境下可以在「开发设置」中关闭"不校验合法域名"
+   - 生产环境必须配置服务器域名
+
+2. **域名配置错误**
+   - 域名必须是 HTTPS（生产环境）
+   - 域名必须在微信公众平台后台配置
+   - SSL 证书必须有效
+
+3. **后端服务未启动**
+   - 确认后端服务是否运行在 3000 端口
+   - 检查后端服务是否正常响应
+
+**解决方案**:
+
+**开发环境**:
+
+```bash
+# 1. 检查后端服务是否运行
+curl -I http://localhost:3000/api/oil-price/province/current
+
+# 2. 在微信开发者工具中，开启"不校验合法域名"
+# 详情 → 本地设置 → 不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书
+```
+
+**生产环境**:
+
+1. 登录[微信公众平台](https://mp.weixin.qq.com/)
+2. 进入「开发」→「开发管理」→「开发设置」
+3. 在「服务器域名」中添加：
+   ```
+   request 合法域名: https://your-domain.com
+   uploadFile 合法域名: https://your-domain.com
+   downloadFile 合法域名: https://your-domain.com
+   ```
+4. 配置环境变量：
+   ```bash
+   # .env.local
+   PROJECT_DOMAIN=https://your-domain.com
+   ```
+
+### 网络请求失败（H5 端）
+
+**症状**: H5 端显示"网络请求失败"
+
+**原因分析**:
+
+1. **后端服务未启动**
+2. **端口冲突**
+3. **CORS 跨域问题**
+
+**解决方案**:
+
+```bash
+# 1. 检查后端服务
+curl -I http://localhost:3000/api/oil-price/province/current
+
+# 2. 检查端口占用
+ss -tuln | grep 3000
+
+# 3. 重启开发服务
+cd /workspace/projects && coze dev
+```
+
+### 数据加载失败
+
+**症状**: 页面显示"数据加载失败"或"网络请求失败"
+
+**排查步骤**:
+
+1. **检查网络请求日志**
+   - 打开浏览器控制台（F12）
+   - 查看 Network 标签页的请求详情
+   - 确认请求 URL、方法、参数是否正确
+
+2. **检查后端日志**
+   ```bash
+   tail -50 /tmp/coze-logs/dev.log
+   ```
+
+3. **测试后端 API**
+   ```bash
+   # 测试油价接口
+   curl http://localhost:3000/api/oil-price/province/current
+
+   # 测试省份列表
+   curl http://localhost:3000/api/oil-price/provinces
+   ```
+
+4. **检查环境变量**
+   ```bash
+   # 确认 .env 文件存在
+   cat .env
+
+   # 确认环境变量加载
+   echo $PROJECT_DOMAIN
+   ```
+
+### 位置定位失败
+
+**症状**: 点击定位按钮后无法获取当前位置
+
+**原因分析**:
+
+1. **用户未授权位置权限**
+2. **设备 GPS 未开启**
+3. **高德地图 API Key 无效**
+
+**解决方案**:
+
+1. 引导用户授权：
+   ```typescript
+   try {
+     await Taro.getLocation({ type: 'gcj02' })
+   } catch (error) {
+     // 提示用户授权
+     await Taro.showModal({
+       title: '需要位置权限',
+       content: '请授权位置信息以获取所在省份的油价',
+       confirmText: '去设置',
+       success: (res) => {
+         if (res.confirm) {
+           Taro.openSetting()
+         }
+       }
+     })
+   }
+   ```
+
+2. 检查高德地图 API Key：
+   ```bash
+   # .env
+   AMAP_API_KEY=your-api-key
+   ```
+
+### 云函数调用失败
+
+**症状**: 云开发相关的功能无法使用
+
+**原因分析**:
+
+1. **云环境未初始化**
+2. **云函数未部署**
+3. **云环境 ID 错误**
+
+**解决方案**:
+
+1. 检查云环境配置（`src/app.ts`）：
+   ```typescript
+   wx.cloud.init({
+     env: 'your-env-id',  // 确认云环境 ID 正确
+     traceUser: true
+   })
+   ```
+
+2. 部署云函数：
+   ```bash
+   # 在微信开发者工具中
+   右键 cloud/functions/get-oil-price → 上传并部署
+   ```
+
+### 热更新失效
+
+**症状**: 修改代码后页面没有自动刷新
+
+**解决方案**:
+
+```bash
+# 重启开发服务
+cd /workspace/projects && coze dev
+```
+
+### 构建失败
+
+**症状**: `pnpm build` 报错
+
+**常见错误及解决方案**:
+
+1. **ESLint 错误**
+   ```bash
+   # 查看错误详情
+   pnpm lint:build
+   
+   # 自动修复
+   pnpm lint:fix
+   ```
+
+2. **TypeScript 错误**
+   ```bash
+   # 查看类型错误
+   pnpm tsc
+   ```
+
+3. **依赖缺失**
+   ```bash
+   # 重新安装依赖
+   rm -rf node_modules pnpm-lock.yaml
+   pnpm install
+   ```
+
+## 调试技巧
+
+### 前端调试
+
+```typescript
+// 在页面中添加调试信息
+console.log('[Debug] 当前城市:', currentCity)
+console.log('[Debug] 油价数据:', priceData)
+console.log('[Debug] 错误信息:', error)
+```
+
+### 后端调试
+
+```bash
+# 查看实时日志
+tail -f /tmp/coze-logs/dev.log
+
+# 搜索错误日志
+tail -f /tmp/coze-logs/dev.log | grep -i error
+```
+
+### 网络请求调试
+
+```typescript
+// src/network.ts 已内置详细的请求/响应日志
+// 打开浏览器控制台（F12）→ Network 标签页查看所有请求
+```
+
+## 环境变量配置
+
+项目使用 `.env.local` 文件管理环境变量：
+
+```bash
+# 天聚数行 API Key
+TIANAPI_KEY=your-tianapi-key
+
+# 聚合数据 API Key
+JUHE_API_KEY=your-juhe-key
+
+# 高德地图 API Key
+AMAP_API_KEY=your-amap-key
+
+# 微信小程序配置
+WECHAT_APPID=your-wechat-appid
+WECHAT_SECRET=your-wechat-secret
+
+# JWT 配置
+JWT_SECRET=your-jwt-secret
+
+# 项目域名（生产环境必填）
+PROJECT_DOMAIN=https://your-domain.com
+```
+
+**注意**:
+- `.env.local` 文件已被 `.gitignore` 忽略，不会提交到版本控制
+- 生产环境请使用 CI/CD 平台的环境变量配置功能

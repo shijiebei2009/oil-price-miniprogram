@@ -59,7 +59,12 @@ const NoticePage = () => {
           data: { code: loginRes.code }
         })
 
-        console.log('后端登录接口响应:', result.data)
+        console.log('后端登录接口响应:', result)
+
+        // 检查响应是否成功
+        if (!result.success) {
+          throw new Error(result.errorMsg || '登录失败')
+        }
 
         if (result.data.code === 200 && result.data.data) {
           const { openid: userOpenid } = result.data.data
@@ -107,7 +112,15 @@ const NoticePage = () => {
         data: { openid: currentOpenid }
       })
 
-      console.log('查询订阅结果:', result.data)
+      console.log('查询订阅结果:', result)
+
+      // 检查响应是否成功
+      if (!result.success) {
+        console.error('查询订阅失败:', result.errorMsg)
+        return
+      }
+
+      console.log('查询订阅结果数据:', result.data)
 
       if (result.data.code === 200 && result.data.data) {
         const subscriptions = result.data.data
@@ -170,7 +183,16 @@ const NoticePage = () => {
         }
       })
 
-      console.log('保存订阅结果:', result.data)
+      console.log('保存订阅结果:', result)
+
+      // 检查响应是否成功
+      if (!result.success) {
+        showToast({
+          title: result.errorMsg || '订阅失败',
+          icon: 'none'
+        })
+        return false
+      }
 
       if (result.data.code === 200) {
         return true
@@ -369,14 +391,24 @@ const NoticePage = () => {
       console.log('缓存中没有城市信息，调用位置服务获取')
       const location = await getLocation({ type: isWeapp ? 'gcj02' : 'wgs84' })
 
-      const res = await Network.request({
+      const result = await Network.request({
         url: `/api/location/reverse-geocode?lat=${location.latitude}&lng=${location.longitude}`,
         method: 'GET'
       })
 
-      if (res.data?.code === 200 && res.data?.data) {
-        const cityName = res.data.data.city
-        const provinceName = res.data.data.province
+      // 检查响应是否成功
+      if (!result.success) {
+        console.error('获取城市信息失败:', result.errorMsg)
+        showToast({
+          title: '获取位置失败',
+          icon: 'none'
+        })
+        return
+      }
+
+      if (result.data?.code === 200 && result.data?.data) {
+        const cityName = result.data.data.city
+        const provinceName = result.data.data.province
 
         console.log('获取到城市信息:', cityName, provinceName)
 

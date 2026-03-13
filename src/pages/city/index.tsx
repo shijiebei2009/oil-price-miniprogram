@@ -23,18 +23,24 @@ const CityPage = () => {
       setLoading(true)
       console.log('开始获取城市价格数据')
 
-      const res = await Network.request({
+      const result = await Network.request({
         url: '/api/oil-price/provinces/compare',
         method: 'GET'
       })
 
-      console.log('城市价格数据响应:', res.data)
+      // 检查响应是否成功
+      if (!result.success) {
+        console.error('获取城市价格数据失败:', result.errorMsg)
+        return
+      }
 
-      if (res.data?.code === 200 && res.data?.data) {
-        setCityData(res.data.data)
-        console.log('城市价格数据解析成功:', res.data.data)
+      console.log('城市价格数据响应:', result.data)
+
+      if (result.data?.code === 200 && result.data?.data) {
+        setCityData(result.data.data)
+        console.log('城市价格数据解析成功:', result.data.data)
       } else {
-        console.error('城市价格数据格式错误:', res.data)
+        console.error('城市价格数据格式错误:', result.data)
       }
     } catch (error) {
       console.error('获取城市价格数据失败:', error)

@@ -61,17 +61,24 @@ const IndexPage = () => {
 
       // 调用后端逆地理编码接口
       // 注意：H5 环境下，GET 请求的参数必须放在 URL 的 query string 中
-      const res = await Network.request({
+      const geocodeResult = await Network.request({
         url: `/api/location/reverse-geocode?lat=${location.latitude}&lng=${location.longitude}`,
         method: 'GET'
       })
 
-      console.log('逆地理编码完整响应:', res)
-      console.log('逆地理编码响应状态码:', res.statusCode)
-      console.log('逆地理编码响应数据:', JSON.stringify(res.data))
+      console.log('逆地理编码完整响应:', geocodeResult)
+      
+      // 检查响应是否成功
+      if (!Network.isSuccessResponse(geocodeResult)) {
+        console.error('逆地理编码失败:', geocodeResult.errorMsg)
+        return '上海市'
+      }
+      
+      console.log('逆地理编码响应状态码:', geocodeResult.statusCode)
+      console.log('逆地理编码响应数据:', JSON.stringify(geocodeResult.data))
 
-      if (res.data?.code === 200 && res.data?.data) {
-        let cityName = res.data.data.city
+      if (geocodeResult.data?.code === 200 && geocodeResult.data?.data) {
+        let cityName = geocodeResult.data.data.city
         console.log('获取到城市名称:', cityName)
 
         // 规范化城市名称（确保与后端 PROVINCES 数组一致）
@@ -105,7 +112,7 @@ const IndexPage = () => {
         })
         return cityName
       } else {
-        console.error('逆地理编码失败:', res.data)
+        console.error('逆地理编码失败:', geocodeResult.data)
         return '上海市'
       }
     } catch (locError) {
@@ -135,12 +142,17 @@ const IndexPage = () => {
         res = await getCloudCurrentPrice(province)
       } else {
         console.log('使用 API 调用')
-        const networkRes = await Network.request({
+        const networkResult = await Network.request({
           url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
           method: 'GET'
         })
-        // 从 Network.request 的返回中提取实际的响应数据
-        res = networkRes.data
+        
+        // 使用类型守卫检查响应是否成功
+        if (!Network.isSuccessResponse(networkResult)) {
+          throw new Error(networkResult.errorMsg || '网络请求失败')
+        }
+        
+        res = networkResult.data
       }
 
       console.log('油价数据响应:', res)
@@ -189,7 +201,14 @@ const IndexPage = () => {
           url: '/api/oil-price/provinces',
           method: 'GET'
         })
-        // 从 Network.request 的返回中提取实际的响应数据
+        
+        // 检查响应是否成功
+        if (!Network.isSuccessResponse(networkRes)) {
+          console.error('获取城市列表失败:', networkRes.errorMsg)
+          return
+        }
+        
+        // 提取实际的响应数据
         res = networkRes.data
       }
 

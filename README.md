@@ -780,14 +780,61 @@ cd /workspace/projects && coze dev
 # - 或允许该网站在扩展的白名单中
 ```
 
-**项目已内置的浏览器扩展处理机制**:
+**项目已内置的错误处理机制**:
 
-项目已经实现了浏览器扩展检测和自动重试机制，当检测到扩展干扰时：
-1. 自动记录警告日志
-2. 等待 500ms 后自动重试一次
-3. 如果重试失败，返回友好的错误提示
+项目已经实现了完整的错误处理机制：
 
-如果问题持续存在，请检查浏览器控制台的详细日志。
+1. **浏览器扩展检测**：
+   - 自动检测 `chrome-extension://` 相关错误
+   - 识别 `Failed to fetch` 错误
+
+2. **自动重试机制**：
+   - 检测到扩展干扰时，等待 500ms 后自动重试一次
+   - 如果重试成功，返回正常响应
+   - 如果重试失败，返回友好的错误提示
+
+3. **全局错误处理器**：
+   - 在应用启动时注册全局 Promise 拒绝处理器
+   - 捕获所有未处理的 Promise 拒绝
+   - 阻止错误传播导致页面崩溃
+
+4. **统一响应格式**：
+   - 所有网络请求返回 `{ success, data?, errorMsg?, statusCode? }` 格式
+   - 调用方通过 `Network.isSuccessResponse(result)` 类型守卫检查响应
+   - 确保 TypeScript 类型安全
+
+5. **用户友好的错误提示**：
+   - 超时错误："请求超时，请检查网络连接"
+   - 网络连接失败："网络连接失败，请检查网络设置或禁用浏览器扩展"
+   - 扩展干扰："网络请求失败，可能受浏览器扩展干扰，建议在无痕模式中测试或禁用扩展"
+
+**代码示例**：
+
+```typescript
+import { Network } from '@/network'
+
+// 正确的错误处理方式
+const result = await Network.request({
+  url: '/api/oil-price/province/current',
+  method: 'GET'
+})
+
+// 使用类型守卫检查响应
+if (!Network.isSuccessResponse(result)) {
+  console.error('请求失败:', result.errorMsg)
+  // 显示错误提示
+  Taro.showToast({
+    title: result.errorMsg || '网络请求失败',
+    icon: 'none'
+  })
+  return
+}
+
+// 处理成功响应
+if (result.data?.code === 200 && result.data?.data) {
+  // 使用 result.data
+}
+```
 
 ### 数据加载失败
 

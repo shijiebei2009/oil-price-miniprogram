@@ -42,6 +42,31 @@ const initProjectDomain = () => {
  * 封装 Taro.request、Taro.uploadFile、Taro.downloadFile，自动添加项目域名前缀
  */
 export namespace Network {
+    // 增强的错误类型
+    interface NetworkError {
+        success: false
+        errorMsg: string
+        url?: string
+        statusCode?: number
+        originalError?: any
+    }
+
+    // 成功响应类型
+    interface NetworkResponse {
+        success: true
+        data: any
+        statusCode: number
+        header: any
+    }
+
+    // 统一的响应类型
+    type ApiResponse = NetworkResponse | NetworkError
+
+    // 类型守卫：检查响应是否成功
+    export const isSuccessResponse = (response: ApiResponse): response is NetworkResponse => {
+        return response.success
+    }
+
     const createUrl = (url: string): string => {
         // 如果已经是完整 URL，直接返回
         if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -76,7 +101,7 @@ export namespace Network {
     /**
      * 响应拦截器：添加日志和错误处理
      */
-    const responseInterceptor = (response: any, originalUrl: string) => {
+    const responseInterceptor = (response: any, originalUrl: string): ApiResponse => {
         console.log('[Network] 📥 响应接收:', {
             url: originalUrl,
             statusCode: response.statusCode,
@@ -91,13 +116,23 @@ export namespace Network {
                 statusCode: response.statusCode,
                 data: response.data
             })
-            throw new Error(`请求失败: ${response.statusCode}`)
+            return {
+                success: false,
+                errorMsg: `请求失败: ${response.statusCode}`,
+                url: originalUrl,
+                statusCode: response.statusCode
+            }
         }
 
-        return response
+        return {
+            success: true,
+            data: response.data,
+            statusCode: response.statusCode,
+            header: response.header
+        }
     }
 
-    export const request = async (option: Taro.request.Option): Promise<any> => {
+    export const request = async (option: Taro.request.Option): Promise<ApiResponse> => {
         try {
             const interceptedOption = requestInterceptor(option)
             const fullUrl = createUrl(interceptedOption.url)
@@ -118,6 +153,7 @@ export namespace Network {
 
             if (isBrowserExtensionError) {
                 console.warn('[Network] ⚠️ 检测到浏览器扩展干扰，尝试重新请求')
+                
                 // 等待一小段时间后重试
                 await new Promise(resolve => setTimeout(resolve, 500))
                 
@@ -137,8 +173,14 @@ export namespace Network {
                         platform: Taro.getEnv(),
                         errorMsg: retryError instanceof Error ? retryError.message : String(retryError)
                     })
-                    // 返回一个模拟的错误响应，避免崩溃
-                    throw new Error('网络请求失败，请检查网络连接或禁用浏览器扩展')
+                    
+                    // 返回错误对象而不是抛出错误
+                    return {
+                        success: false,
+                        errorMsg: '网络请求失败，可能受浏览器扩展干扰，建议在无痕模式中测试或禁用扩展',
+                        url: option.url,
+                        originalError: retryError
+                    }
                 }
             }
 
@@ -155,8 +197,8 @@ export namespace Network {
             if (error instanceof Error) {
                 if (error.message.includes('timeout')) {
                     userFriendlyMessage = '请求超时，请检查网络连接'
-                } else if (error.message.includes('Network Error')) {
-                    userFriendlyMessage = '网络连接失败，请检查网络设置'
+                } else if (error.message.includes('Network Error') || error.message.includes('Failed to fetch')) {
+                    userFriendlyMessage = '网络连接失败，请检查网络设置或禁用浏览器扩展'
                 } else if (error.message.includes('404')) {
                     userFriendlyMessage = '请求的资源不存在'
                 } else if (error.message.includes('500')) {
@@ -164,7 +206,13 @@ export namespace Network {
                 }
             }
 
-            throw new Error(userFriendlyMessage)
+            // 返回错误对象而不是抛出错误
+            return {
+                success: false,
+                errorMsg: userFriendlyMessage,
+                url: option.url,
+                originalError: error
+            }
         }
     }
 

@@ -21,6 +21,81 @@ export default ({ children }: PropsWithChildren<any>) => {
       });
     }
 
+    // 在 H5 环境中，覆盖 window.fetch 以处理浏览器扩展干扰
+    if (typeof window !== 'undefined' && window.fetch && !isWeapp) {
+      const originalFetch = window.fetch;
+      
+      window.fetch = async (...args) => {
+        try {
+          // 尝试使用原始 fetch
+          return await originalFetch(...args);
+        } catch (error) {
+          // 检查是否是浏览器扩展相关的错误
+          const isBrowserExtensionError = 
+            error instanceof Error && 
+            (error.message.includes('chrome-extension') || 
+             error.message.includes('Failed to fetch') ||
+             error.stack?.includes('chrome-extension'));
+          
+          if (isBrowserExtensionError) {
+            console.warn('[Fetch] 检测到浏览器扩展干扰，尝试重新请求');
+            
+            // 等待一小段时间后重试
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            try {
+              // 重试一次
+              return await originalFetch(...args);
+            } catch (retryError) {
+              console.error('[Fetch] 重试失败:', retryError);
+              
+              // 获取 URL 字符串
+              let urlStr = '';
+              if (typeof args[0] === 'string') {
+                urlStr = args[0];
+              } else if (args[0] instanceof URL) {
+                urlStr = args[0].href;
+              } else {
+                urlStr = args[0]?.toString() || '';
+              }
+              
+              // 返回一个模拟的失败 Response
+              return {
+                ok: false,
+                status: 0,
+                statusText: 'Network Error',
+                url: urlStr,
+                headers: new Headers(),
+                redirected: false,
+                type: 'basic' as ResponseType,
+                clone: function() { return this; },
+                body: null,
+                bodyUsed: false,
+                text: async () => Promise.resolve(JSON.stringify({
+                  code: 0,
+                  msg: '网络请求失败，可能受浏览器扩展干扰',
+                  data: null
+                })),
+                json: async () => Promise.resolve({
+                  code: 0,
+                  msg: '网络请求失败，可能受浏览器扩展干扰',
+                  data: null
+                }),
+                arrayBuffer: async () => Promise.resolve(new ArrayBuffer(0)),
+                blob: async () => Promise.resolve(new Blob()),
+                formData: async () => Promise.resolve(new FormData())
+              } as Response;
+            }
+          }
+          
+          // 其他错误直接抛出
+          throw error;
+        }
+      };
+      
+      console.log('✅ window.fetch 已覆盖，已添加浏览器扩展错误处理');
+    }
+
     // 全局错误处理器 - 捕获未处理的 Promise 拒绝
     if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('unhandledrejection', (event) => {

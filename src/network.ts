@@ -109,13 +109,62 @@ export namespace Network {
 
             return responseInterceptor(response, fullUrl)
         } catch (error) {
+            // 判断是否是浏览器扩展导致的错误
+            const isBrowserExtensionError = 
+                error instanceof Error && 
+                (error.message.includes('chrome-extension') || 
+                 error.message.includes('Failed to fetch') ||
+                 error.stack?.includes('chrome-extension'))
+
+            if (isBrowserExtensionError) {
+                console.warn('[Network] ⚠️ 检测到浏览器扩展干扰，尝试重新请求')
+                // 等待一小段时间后重试
+                await new Promise(resolve => setTimeout(resolve, 500))
+                
+                // 重试一次
+                try {
+                    const interceptedOption = requestInterceptor(option)
+                    const fullUrl = createUrl(interceptedOption.url)
+                    const response = await Taro.request({
+                        ...interceptedOption,
+                        url: fullUrl,
+                    })
+                    return responseInterceptor(response, fullUrl)
+                } catch (retryError) {
+                    console.error('[Network] ❌ 重试失败:', {
+                        url: option.url,
+                        error: retryError,
+                        platform: Taro.getEnv(),
+                        errorMsg: retryError instanceof Error ? retryError.message : String(retryError)
+                    })
+                    // 返回一个模拟的错误响应，避免崩溃
+                    throw new Error('网络请求失败，请检查网络连接或禁用浏览器扩展')
+                }
+            }
+
             console.error('[Network] ❌ 请求异常:', {
                 url: option.url,
                 error: error,
                 platform: Taro.getEnv(),
-                errorMsg: error instanceof Error ? error.message : String(error)
+                errorMsg: error instanceof Error ? error.message : String(error),
+                errorStack: error instanceof Error ? error.stack : undefined
             })
-            throw error
+
+            // 转换错误消息
+            let userFriendlyMessage = '网络请求失败'
+            if (error instanceof Error) {
+                if (error.message.includes('timeout')) {
+                    userFriendlyMessage = '请求超时，请检查网络连接'
+                } else if (error.message.includes('Network Error')) {
+                    userFriendlyMessage = '网络连接失败，请检查网络设置'
+                } else if (error.message.includes('404')) {
+                    userFriendlyMessage = '请求的资源不存在'
+                } else if (error.message.includes('500')) {
+                    userFriendlyMessage = '服务器内部错误'
+                }
+            }
+
+            throw new Error(userFriendlyMessage)
         }
     }
 

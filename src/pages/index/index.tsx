@@ -134,7 +134,7 @@ const IndexPage = () => {
       } else {
         console.log('使用 API 调用')
         const networkRes = await Network.request({
-          url: province ? `/api/oil-price/province/current?province=${encodeURIComponent(province)}` : '/api/oil-price/province/current',
+          url: province ? `/api/oil-price/current?province=${encodeURIComponent(province)}` : '/api/oil-price/current',
           method: 'GET'
         })
         // 从 Network.request 的返回中提取实际的响应数据
@@ -176,7 +176,7 @@ const IndexPage = () => {
       } else {
         console.log('使用 API 调用')
         const networkRes = await Network.request({
-          url: '/api/oil-price/provinces',
+          url: '/api/oil-price/provinces/compare',
           method: 'GET'
         })
         // 从 Network.request 的返回中提取实际的响应数据

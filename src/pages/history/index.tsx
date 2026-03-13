@@ -62,32 +62,22 @@ const HistoryPage = () => {
       }
 
       // 然后请求最新数据，传递省份参数
-      const result = await Network.request({
+      const res = await Network.request({
         url: `/api/oil-price/history?province=${province}`,
         method: 'GET'
       })
 
-      // 检查响应是否成功
-      if (!result.success) {
-        console.error('获取历史价格数据失败:', result.errorMsg)
-        Taro.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        })
-        return
-      }
-
-      // result.data 包含实际的响应数据 { code, msg, data }
-      if (result.data?.code === 200 && result.data?.data) {
-        const sortedData = [...result.data.data].sort((a, b) => {
+      // res.data 包含实际的响应数据 { code, msg, data }
+      if (res.data?.code === 200 && res.data?.data) {
+        const sortedData = [...res.data.data].sort((a, b) => {
           return new Date(a.date).getTime() - new Date(b.date).getTime()
         })
         setHistoryData(sortedData)
 
         // 保存到缓存
-        await saveHistoryToCache(result.data.data)
+        await saveHistoryToCache(res.data.data)
       } else {
-        console.error('历史价格数据格式错误:', result.data)
+        console.error('历史价格数据格式错误:', res.data)
         Taro.showToast({
           title: '数据加载失败',
           icon: 'none'

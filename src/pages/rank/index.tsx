@@ -31,27 +31,17 @@ const RankPage = () => {
   const loadProvincePrices = async () => {
     try {
       setLoading(true)
-      const result = await Network.request({
+      const res = await Network.request({
         url: '/api/oil-price/provinces/compare',
         method: 'GET'
       })
 
-      // 检查响应是否成功
-      if (!result.success) {
-        console.error('获取全国油价数据失败:', result.errorMsg)
-        Taro.showToast({
-          title: '网络请求失败',
-          icon: 'none'
-        })
-        return
-      }
+      console.log('全国油价数据响应:', res.data)
 
-      console.log('全国油价数据响应:', result.data)
-
-      if (result.data?.code === 200 && result.data?.data) {
-        setProvincePrices(result.data.data)
+      if (res.data?.code === 200 && res.data?.data) {
+        setProvincePrices(res.data.data)
       } else {
-        console.error('全国油价数据格式错误:', result.data)
+        console.error('全国油价数据格式错误:', res.data)
         Taro.showToast({
           title: '数据加载失败',
           icon: 'none'

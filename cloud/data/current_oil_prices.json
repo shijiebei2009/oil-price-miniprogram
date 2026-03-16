@@ -1,36 +1,34 @@
-[
-  {"province":"北京市","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"上海市","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"天津市","gas92":7.48,"gas95":7.88,"gas98":9.38,"diesel0":7.13,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"重庆市","gas92":7.56,"gas95":7.96,"gas98":9.53,"diesel0":7.20,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"河北省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"山西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"内蒙古自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"辽宁省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"吉林省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"黑龙江省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"江苏省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"浙江省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"安徽省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"福建省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"江西省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"山东省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"河南省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"湖北省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"湖南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"广东省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"广西壮族自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"海南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"四川省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"贵州省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"云南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"西藏自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"陕西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"甘肃省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"青海省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"宁夏回族自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"新疆维吾尔自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"台湾省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"香港特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"澳门特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
-]
+{"province":"北京市","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"上海市","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"天津市","gas92":7.48,"gas95":7.88,"gas98":9.38,"diesel0":7.13,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"重庆市","gas92":7.56,"gas95":7.96,"gas98":9.53,"diesel0":7.20,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"河北省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"山西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"内蒙古自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"辽宁省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"吉林省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"黑龙江省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"江苏省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"浙江省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"安徽省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"福建省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"江西省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"山东省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"河南省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"湖北省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"湖南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"广东省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"广西壮族自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"海南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"四川省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"贵州省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"云南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"西藏自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"陕西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"甘肃省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"青海省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"宁夏回族自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"新疆维吾尔自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"台湾省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"香港特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
+{"province":"澳门特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}

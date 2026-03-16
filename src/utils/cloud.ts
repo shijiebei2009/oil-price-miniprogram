@@ -1,11 +1,16 @@
 /**
  * 微信云开发网络请求封装
  */
-import Taro from '@tarojs/taro'
 
-// 检测是否在云开发环境
+// 检测是否在云开发环境且已开通云开发服务
 export const isCloudEnv = () => {
-  return Taro.getEnv() === Taro.ENV_TYPE.WEAPP && typeof wx !== 'undefined' && wx.cloud
+  // 始终返回 false，强制使用 HTTP API
+  // 因为云开发需要单独开通，且云函数部署复杂
+  // HTTP API 更通用，适合大多数场景
+  return false
+
+  // 如果需要使用云开发，取消下面的注释并开通云开发服务
+  // return Taro.getEnv() === Taro.ENV_TYPE.WEAPP && typeof wx !== 'undefined' && wx.cloud
 }
 
 // 云函数调用

@@ -16,7 +16,7 @@ export default ({ children }: PropsWithChildren<any>) => {
     if (isWeapp) {
       console.log('📦 初始化云开发环境');
       wx.cloud.init({
-        env: 'cloud1-0gvykhvqe6c6a995', // 云环境ID
+        env: 'cloudbase-1ggn79x4a9fbddec', // 云环境ID
         traceUser: true
       });
     }

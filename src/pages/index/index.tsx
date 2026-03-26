@@ -404,9 +404,9 @@ const IndexPage = () => {
             <View className="bg-white rounded-2xl p-4 shadow-sm">
               <View className="flex flex-row items-center justify-between mb-4">
                 <Text className="block text-lg font-semibold text-gray-900">当前油价</Text>
-                {priceData.provinceName && priceData.cityName && (
+                {(priceData.cityName || currentCity) && (
                   <Text className="block text-xs text-gray-500">
-                    {priceData.provinceName} · {priceData.cityName}
+                    {priceData.cityName || currentCity}
                   </Text>
                 )}
               </View>

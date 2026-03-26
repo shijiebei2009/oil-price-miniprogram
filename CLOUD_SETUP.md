@@ -25,67 +25,28 @@ wx.cloud.init({
 在云开发控制台 → 数据库，创建以下集合：
 
 1. `current_oil_prices` - 当前油价数据
-2. `daily_oil_prices` - 每日油价历史
-3. `oil_price_adjustments` - 调价历史
+2. `daily_oil_prices` - 每日油价历史（可选）
+3. `oil_price_adjustments` - 调价历史（用于计算价格变化）
 
 ## 四、导入初始数据
 
 ### 4.1 导入当前油价数据
 
-在 `current_oil_prices` 集合中导入以下数据（JSON 格式）：
+在 `current_oil_prices` 集合中导入 `cloud/data/current_oil_prices.json` 文件。
 
+**重要**：微信云开发要求导入格式为 **JSON Lines**（每行一个 JSON 对象，无逗号分隔）。
+
+示例格式：
 ```json
-[
-  {"province":"北京市","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"上海市","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"天津市","gas92":7.48,"gas95":7.88,"gas98":9.38,"diesel0":7.13,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"重庆市","gas92":7.56,"gas95":7.96,"gas98":9.53,"diesel0":7.20,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"河北省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"山西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"内蒙古自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"辽宁省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"吉林省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"黑龙江省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"江苏省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"浙江省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"安徽省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"福建省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"江西省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"山东省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"河南省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"湖北省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"湖南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"广东省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"广西壮族自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"海南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"四川省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"贵州省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"云南省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"西藏自治区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"陕西省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"甘肃省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"青海省","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"宁夏回族自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"新疆维吾尔自治区","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"台湾省","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"香港特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"},
-  {"province":"澳门特别行政区","gas92":7.60,"gas95":8.05,"gas98":10.05,"diesel0":6.71,"updateTime":"2026-03-09T00:00:00.000Z"}
-]
+{"province":"北京市","gas92":7.87,"gas95":8.38,"gas98":9.36,"diesel0":7.59,"updateTime":"2026-01-05"}
+{"province":"上海市","gas92":7.83,"gas95":8.33,"gas98":9.23,"diesel0":7.52,"updateTime":"2026-01-05"}
 ```
 
-### 4.2 导入调价历史数据
+### 4.2 导入调价历史数据（重要）
 
-在 `oil_price_adjustments` 集合中导入：
+在 `oil_price_adjustments` 集合中导入 `cloud/data/oil_price_adjustments.json` 文件。
 
-```json
-[
-  {"date":"2026-01-06","province":"北京市","gas92":6.87,"gas95":7.32,"gas98":8.82,"diesel0":6.55},
-  {"date":"2026-01-20","province":"北京市","gas92":6.87,"gas95":7.34,"gas98":9.32,"diesel0":6.55},
-  {"date":"2026-02-03","province":"北京市","gas92":6.93,"gas95":7.41,"gas98":8.95,"diesel0":6.59},
-  {"date":"2026-02-24","province":"北京市","gas92":7.48,"gas95":7.93,"gas98":9.43,"diesel0":7.16},
-  {"date":"2026-03-09","province":"北京市","gas92":7.49,"gas95":7.94,"gas98":9.44,"diesel0":7.17}
-]
-```
+这个数据用于计算价格变化，**如果不导入，价格变化将显示为随机模拟值**。
 
 ## 五、部署云函数
 
@@ -94,15 +55,40 @@ wx.cloud.init({
 3. 选择「上传并部署：云端安装依赖」
 4. 等待部署完成
 
-## 六、修改代码启用云开发
+**注意**：如果右键菜单没有「上传并部署」选项，请检查 `project.config.json` 中是否配置了：
+```json
+{
+  "cloudfunctionRoot": "./cloud/functions"
+}
+```
 
-确认 `src/utils/cloud.ts` 中的 `isCloudEnv()` 函数：
+## 六、验证云函数
 
-```typescript
-import Taro from '@tarojs/taro'
+在微信开发者工具中，打开「云开发控制台」→「云函数」→「get-oil-price」→「测试」，输入：
 
-export const isCloudEnv = () => {
-  return Taro.getEnv() === Taro.ENV_TYPE.WEAPP && typeof wx !== 'undefined' && wx.cloud
+```json
+{
+  "action": "getProvinceCurrent",
+  "province": "北京市"
+}
+```
+
+如果返回以下格式，说明云函数正常工作：
+
+```json
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "currentPrices": [
+      {"name": "92号汽油", "price": 7.87, "previousPrice": 7.82, "change": 0.05},
+      ...
+    ],
+    "nextAdjustment": {...},
+    "updateTime": "2026-01-05",
+    "cityName": "北京市",
+    "provinceName": "北京市"
+  }
 }
 ```
 
@@ -122,10 +108,19 @@ pnpm build:weapp
 A: 有免费额度，每月 5GB 流量、2GB 数据库存储、1000 次云函数调用，足够测试使用。
 
 ### Q: 数据怎么导入？
-A: 云开发控制台 → 数据库 → 选择集合 → 导入 → 选择 JSON 文件
+A: 云开发控制台 → 数据库 → 选择集合 → 导入 → 选择 JSON 文件（注意必须是 JSON Lines 格式）
 
 ### Q: 云函数调用报错怎么办？
 A: 检查：
 1. 云环境 ID 是否正确
 2. 云函数是否部署成功
 3. 数据库集合是否创建并导入数据
+4. 查看云函数日志排查问题
+
+### Q: 价格变化为什么显示为 0？
+A: 请确保导入了 `oil_price_adjustments` 集合的数据。
+
+### Q: 为什么显示"上海市 · 北京市"？
+A: 这是数据不匹配导致的，请确保：
+1. 前端传入的省份名称与数据库中的 `province` 字段一致
+2. 已导入正确的油价数据

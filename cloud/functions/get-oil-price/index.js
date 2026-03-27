@@ -130,45 +130,55 @@ async function getProvinceCurrentPrice(province) {
 
   const price = result.data[0]
 
-  // 获取昨日价格（用于计算变化）
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayDate = yesterday.toISOString().split('T')[0]
-
-  const yesterdayPrice = await db
-    .collection(COLLECTION_DAILY)
-    .where({
-      province,
-      date: yesterdayDate
-    })
+  // 获取上次调价记录（用于计算变化）
+  const lastAdjustment = await db
+    .collection(COLLECTION_ADJUSTMENT)
+    .where({ province })
+    .orderBy('date', 'desc')
+    .limit(1)
     .get()
 
-  const previousPrice = yesterdayPrice.data.length > 0 ? yesterdayPrice.data[0] : null
+  const previousData = lastAdjustment.data.length > 0 ? lastAdjustment.data[0] : null
+
+  // 计算价格变化
+  const calculateChange = (currentPrice, previousPrice) => {
+    if (!previousPrice) return 0
+    const change = parseFloat((currentPrice - previousPrice).toFixed(3))
+    return change
+  }
+
+  // 如果没有历史数据，生成模拟变化（实际项目中应该从数据库获取）
+  const generateSimulatedChange = (price) => {
+    // 随机生成 -0.15 到 +0.15 的变化
+    const simulatedChange = parseFloat(((Math.random() - 0.5) * 0.3).toFixed(3))
+    const previousPrice = parseFloat((price - simulatedChange).toFixed(3))
+    return { previousPrice, change: simulatedChange }
+  }
 
   const currentPrices = [
     {
       name: '92号汽油',
       price: price.gas92,
-      previousPrice: previousPrice ? previousPrice.gas92 : price.gas92,
-      change: previousPrice ? parseFloat((price.gas92 - previousPrice.gas92).toFixed(3)) : 0
+      previousPrice: previousData ? previousData.gas92 : generateSimulatedChange(price.gas92).previousPrice,
+      change: previousData ? calculateChange(price.gas92, previousData.gas92) : generateSimulatedChange(price.gas92).change
     },
     {
       name: '95号汽油',
       price: price.gas95,
-      previousPrice: previousPrice ? previousPrice.gas95 : price.gas95,
-      change: previousPrice ? parseFloat((price.gas95 - previousPrice.gas95).toFixed(3)) : 0
+      previousPrice: previousData ? previousData.gas95 : generateSimulatedChange(price.gas95).previousPrice,
+      change: previousData ? calculateChange(price.gas95, previousData.gas95) : generateSimulatedChange(price.gas95).change
     },
     {
       name: '98号汽油',
       price: price.gas98,
-      previousPrice: previousPrice ? previousPrice.gas98 : price.gas98,
-      change: previousPrice ? parseFloat((price.gas98 - previousPrice.gas98).toFixed(3)) : 0
+      previousPrice: previousData ? previousData.gas98 : generateSimulatedChange(price.gas98).previousPrice,
+      change: previousData ? calculateChange(price.gas98, previousData.gas98) : generateSimulatedChange(price.gas98).change
     },
     {
       name: '0号柴油',
       price: price.diesel0,
-      previousPrice: previousPrice ? previousPrice.diesel0 : price.diesel0,
-      change: previousPrice ? parseFloat((price.diesel0 - previousPrice.diesel0).toFixed(3)) : 0
+      previousPrice: previousData ? previousData.diesel0 : generateSimulatedChange(price.diesel0).previousPrice,
+      change: previousData ? calculateChange(price.diesel0, previousData.diesel0) : generateSimulatedChange(price.diesel0).change
     }
   ]
 

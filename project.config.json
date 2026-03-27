@@ -1,6 +1,6 @@
 {
   "miniprogramRoot": "dist/",
-  "cloudfunctionRoot": "./cloud/functions",
+  "cloudfunctionRoot": "cloud/functions",
   "projectname": "coze-mini-program",
   "description": "油价查询小程序",
   "appid": "wxb59ad49d00259381",

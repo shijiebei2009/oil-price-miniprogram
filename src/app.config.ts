@@ -12,6 +12,9 @@ export default defineAppConfig({
       desc: '你的位置信息将用于获取所在省份的油价信息'
     }
   },
+  requiredPrivateInfos: [
+    'getLocation'
+  ],
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#fff',

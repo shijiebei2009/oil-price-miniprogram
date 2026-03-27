@@ -58,8 +58,25 @@ const IndexPage = () => {
       })
       console.log('获取到位置:', location)
 
-      // 调用后端逆地理编码接口
-      // 注意：H5 环境下，GET 请求的参数必须放在 URL 的 query string 中
+      // 检查是否是云开发环境（没有后端服务）
+      const isCloudEnv = typeof wx !== 'undefined' && wx.cloud
+
+      if (isCloudEnv) {
+        // 云开发环境：使用简单的坐标判断城市（基于省份中心坐标）
+        console.log('云开发环境，使用坐标推断城市')
+        const province = getProvinceByCoordinate(location.latitude, location.longitude)
+        if (province) {
+          Taro.showToast({
+            title: `已定位到${province}`,
+            icon: 'success',
+            duration: 1500
+          })
+          return province
+        }
+        return '上海市'
+      }
+
+      // 非云开发环境：调用后端逆地理编码接口
       const res = await Network.request({
         url: `/api/location/reverse-geocode?lat=${location.latitude}&lng=${location.longitude}`,
         method: 'GET'
@@ -117,6 +134,57 @@ const IndexPage = () => {
       })
       return '上海市'
     }
+  }
+
+  // 根据坐标推断省份（简化版，用于云开发环境）
+  const getProvinceByCoordinate = (lat: number, lng: number): string | null => {
+    // 主要省份的中心坐标范围（简化版）
+    const provinces = [
+      { name: '北京市', latRange: [39.4, 41.0], lngRange: [115.4, 117.5] },
+      { name: '上海市', latRange: [30.7, 31.9], lngRange: [120.9, 122.2] },
+      { name: '天津市', latRange: [38.5, 40.2], lngRange: [116.7, 118.1] },
+      { name: '重庆市', latRange: [28.1, 32.2], lngRange: [105.3, 110.2] },
+      { name: '广东省', latRange: [20.2, 25.5], lngRange: [109.7, 117.3] },
+      { name: '江苏省', latRange: [30.7, 35.1], lngRange: [116.3, 121.9] },
+      { name: '浙江省', latRange: [27.0, 31.2], lngRange: [118.0, 123.2] },
+      { name: '山东省', latRange: [34.4, 38.4], lngRange: [114.8, 122.7] },
+      { name: '河南省', latRange: [31.4, 36.4], lngRange: [110.4, 116.6] },
+      { name: '河北省', latRange: [36.0, 42.6], lngRange: [113.5, 119.8] },
+      { name: '四川省', latRange: [26.0, 34.0], lngRange: [97.3, 108.5] },
+      { name: '湖北省', latRange: [29.0, 33.3], lngRange: [108.4, 116.1] },
+      { name: '湖南省', latRange: [24.6, 30.1], lngRange: [108.8, 114.2] },
+      { name: '福建省', latRange: [23.5, 28.3], lngRange: [115.8, 120.7] },
+      { name: '安徽省', latRange: [29.4, 34.7], lngRange: [114.9, 119.6] },
+      { name: '辽宁省', latRange: [38.7, 43.5], lngRange: [118.9, 125.8] },
+      { name: '吉林省', latRange: [40.9, 46.3], lngRange: [121.6, 131.3] },
+      { name: '黑龙江省', latRange: [43.4, 53.5], lngRange: [121.2, 135.1] },
+      { name: '陕西省', latRange: [31.7, 39.6], lngRange: [105.5, 111.2] },
+      { name: '山西省', latRange: [34.6, 40.7], lngRange: [110.2, 114.5] },
+      { name: '江西省', latRange: [24.5, 30.1], lngRange: [113.6, 118.5] },
+      { name: '广西壮族自治区', latRange: [20.5, 26.4], lngRange: [104.5, 112.0] },
+      { name: '云南省', latRange: [21.1, 29.3], lngRange: [97.5, 106.2] },
+      { name: '贵州省', latRange: [24.6, 29.2], lngRange: [103.6, 109.6] },
+      { name: '海南省', latRange: [18.2, 20.2], lngRange: [108.6, 111.1] },
+      { name: '甘肃省', latRange: [32.6, 42.8], lngRange: [92.3, 108.7] },
+      { name: '青海省', latRange: [31.6, 39.2], lngRange: [89.4, 103.0] },
+      { name: '内蒙古自治区', latRange: [37.4, 53.4], lngRange: [97.2, 126.0] },
+      { name: '新疆维吾尔自治区', latRange: [34.4, 49.2], lngRange: [73.4, 96.4] },
+      { name: '西藏自治区', latRange: [26.8, 36.5], lngRange: [78.4, 99.1] },
+      { name: '宁夏回族自治区', latRange: [35.2, 39.4], lngRange: [104.3, 107.7] },
+    ]
+
+    for (const province of provinces) {
+      if (
+        lat >= province.latRange[0] &&
+        lat <= province.latRange[1] &&
+        lng >= province.lngRange[0] &&
+        lng <= province.lngRange[1]
+      ) {
+        return province.name
+      }
+    }
+
+    return null
   }
 
   // 加载油价数据
